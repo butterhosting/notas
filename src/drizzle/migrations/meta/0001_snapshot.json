@@ -1,0 +1,14 @@
+{
+  "id": "f5175621-92eb-4f69-b815-0de37f12e99f",
+  "prevId": "1c85b902-d56e-4d78-b5e3-0af3b0f24df6",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {},
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

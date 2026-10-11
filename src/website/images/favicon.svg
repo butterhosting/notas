@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>hash</title>
+    <g fill="none" stroke-width="7" stroke-linecap="round">
+        <path d="M27,10 L21,54 M45,10 L39,54 M12,24 L54,24 M10,40 L52,40" stroke="#0f6b58" transform="translate(3.5 3.5)"></path>
+        <path d="M27,10 L21,54 M45,10 L39,54 M12,24 L54,24 M10,40 L52,40" stroke="#1fb393"></path>
+    </g>
+</svg>

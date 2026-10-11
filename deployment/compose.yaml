@@ -1,0 +1,26 @@
+services:
+  # Creates root-owned directories in the volume before notas starts.
+  # This simulates a real deployment where bind mounts or pre-existing
+  # volumes are owned by root — the scenario where the entrypoint's
+  # chown is actually needed.
+  init:
+    image: alpine
+    volumes:
+      - notas:/opt/notas
+    command: ["sh", "-c", "mkdir -p /opt/notas/data"]
+
+  notas:
+    image: butterhosting/notas:latest
+    environment:
+      # a bcrypt hash of "admin"; compose expands `$`, so every one is doubled
+      NOTAS_ADMIN_PASSWORD: "$$2b$$10$$nz4CXs.JY7zL31d2xM3LnuCxs6bCwHcMbwMYPcugj.zsh6ydXdxgO"
+    ports:
+      - "3000:3000"
+    volumes:
+      - notas:/opt/notas
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+volumes:
+  notas:
