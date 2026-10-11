@@ -44,9 +44,9 @@ export const PageLink = Node.create({
 function PageLinkView({ node }: NodeViewProps) {
   const page = usePageIndex()?.find(({ id }) => id === node.attrs.id);
   return (
-    <NodeViewWrapper className="page-link" contentEditable={false}>
+    <NodeViewWrapper contentEditable={false}>
       {page ? (
-        <Link to={Route.page(page.id)}>
+        <Link to={Route.page(page.id)} className="flex items-center gap-1.5 rounded px-0.5 py-1 font-medium no-underline hover:bg-c-hover">
           {page.icon ? <span className="w-5 text-center">{page.icon}</span> : <Icon.Page className="size-5 text-c-dark-half" />}
           <span className="underline decoration-c-dark-half/40 underline-offset-2">{page.title || "Untitled"}</span>
         </Link>

@@ -142,6 +142,7 @@ export namespace Icon {
     </>,
   );
   export const Moon = svg(<path d="M16 12.2A6.5 6.5 0 0 1 7.8 4a6.5 6.5 0 1 0 8.2 8.2z" />);
+  export const User = svg(<path d="M10 9.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4.5 16.5a5.5 5.5 0 0 1 11 0" />);
   export const Logout = svg(<path d="M8 3.5H5a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 5 16.5h3M13 6.5l3.5 3.5-3.5 3.5M16.5 10H8" />);
   export const Search = svg(
     <>

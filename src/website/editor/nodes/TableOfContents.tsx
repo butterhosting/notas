@@ -47,11 +47,12 @@ function TableOfContentsView({ editor }: NodeViewProps) {
   });
   const minLevel = Math.min(...headings.map(({ level }) => level));
   return (
-    <NodeViewWrapper className="toc" contentEditable={false}>
+    <NodeViewWrapper className="flex flex-col items-start text-sm" contentEditable={false}>
       {headings.length === 0 && <div className="text-c-dark-half">Add headings to create a table of contents.</div>}
       {headings.map(({ level, text, pos }) => (
         <button
           key={pos}
+          className="w-full rounded py-1 text-left text-c-dark-full/70 underline decoration-c-dark-full/20 underline-offset-2 hover:bg-c-hover"
           style={{ paddingLeft: `${(level - minLevel) * 1.5}rem` }}
           onClick={() => (editor.view.nodeDOM(pos) as HTMLElement | null)?.scrollIntoView({ behavior: "smooth", block: "start" })}
         >

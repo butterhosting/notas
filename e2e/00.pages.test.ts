@@ -32,7 +32,7 @@ test("with pages, the home page opens the first one", async ({ page }) => {
   // then
   await expect(page).toHaveTitle("👋 Welcome to Notas | Notas");
   await expect(page.getByTestId("sidebar-page")).toHaveCount(2); // the subpage is collapsed
-  await expect(page.locator(".callout")).toContainText("Type / anywhere");
+  await expect(page.locator('[data-type="callout"]')).toContainText("Type / anywhere");
 });
 
 test("an unknown route redirects home", async ({ page }) => {

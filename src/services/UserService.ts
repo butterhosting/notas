@@ -60,6 +60,26 @@ export class UserService {
     return user;
   }
 
+  /** A user's changes to their own account take their current password, so an unattended session can't take it over. */
+  public async updateAccount(user: User, unknown: z.input<typeof UserService.AccountUpdate>): Promise<User> {
+    const { currentPassword, ...patch } = UserService.AccountUpdate.parse(unknown);
+    await this.checkPassword(user, currentPassword);
+    return await this.update(user.id, patch);
+  }
+
+  public async deleteAccount(user: User, unknown: z.input<typeof UserService.AccountDelete>): Promise<User> {
+    const { password } = UserService.AccountDelete.parse(unknown);
+    await this.checkPassword(user, password);
+    return await this.delete(user.id);
+  }
+
+  private async checkPassword(user: User, password: string): Promise<void> {
+    const found = await this.userRepository.findWithPasswordHash(user.username);
+    if (!found || !(await Bun.password.verify(password, found.passwordHash))) {
+      throw UserError.wrong_password();
+    }
+  }
+
   /** With everything they own, including workspaces shared with others. */
   public async delete(id: string): Promise<User> {
     const owned = await this.workspaceRepository.idsOwnedBy(id);
@@ -95,6 +115,18 @@ export namespace UserService {
 
   export const Update = z
     .object({ username: username.optional(), password: password.optional() })
+    .catch((e) => {
+      throw ServerError.invalid_request_body(ZodProblem.issuesSummary(e));
+    });
+
+  export const AccountUpdate = z
+    .object({ currentPassword: z.string(), username: username.optional(), password: password.optional() })
+    .catch((e) => {
+      throw ServerError.invalid_request_body(ZodProblem.issuesSummary(e));
+    });
+
+  export const AccountDelete = z
+    .object({ password: z.string() })
     .catch((e) => {
       throw ServerError.invalid_request_body(ZodProblem.issuesSummary(e));
     });

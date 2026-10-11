@@ -16,6 +16,8 @@ type Hover = {
 };
 
 // Markdown tables have exactly one header row, the first: nothing goes above it, and deleting it promotes the next.
+const GRIP = "absolute z-10 flex items-center justify-center rounded bg-c-surface text-c-dark-half shadow-popover hover:bg-c-hover";
+
 export function TableControls({ editor, container }: { editor: Editor; container: HTMLElement | null }) {
   const [hover, setHover] = useState<Hover>();
   const [menu, setMenu] = useState<{ kind: "row" | "col"; anchor: HTMLElement }>();
@@ -108,7 +110,7 @@ export function TableControls({ editor, container }: { editor: Editor; container
         <button
           aria-label="row actions"
           onClick={(e) => setMenu({ kind: "row", anchor: e.currentTarget })}
-          className="table-grip absolute z-10 h-6 w-3"
+          className={clsx(GRIP, "h-6 w-3")}
           style={{ left: table.left - box.left - 7, top: row.top - box.top + row.height / 2 - 12 }}
         >
           <Icon.Grip className="size-3" />
@@ -118,7 +120,7 @@ export function TableControls({ editor, container }: { editor: Editor; container
         <button
           aria-label="column actions"
           onClick={(e) => setMenu({ kind: "col", anchor: e.currentTarget })}
-          className="table-grip absolute z-10 h-3 w-6"
+          className={clsx(GRIP, "h-3 w-6")}
           style={{ left: col.left - box.left + col.width / 2 - 12, top: table.top - box.top - 7 }}
         >
           <Icon.Grip className="size-3 rotate-90" />
@@ -252,7 +254,7 @@ function AddBar({ axis, style, unit, add, removeLast }: { axis: "row" | "col"; s
       aria-label={axis === "row" ? "add row" : "add column"}
       title={`Click to add a ${axis === "row" ? "row" : "column"}, drag to add or remove several`}
       onPointerDown={onPointerDown}
-      className="table-add absolute z-10 flex cursor-pointer items-center justify-center"
+      className="absolute z-10 flex cursor-pointer items-center justify-center rounded bg-c-hover text-c-dark-half opacity-60 hover:opacity-100"
       style={style}
     >
       <Icon.Plus className="size-3" />

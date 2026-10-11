@@ -161,7 +161,7 @@ export namespace BlockHandle {
   function anchor(type: string | undefined, parent: string, dom: HTMLElement, rect: DOMRect): { left: number; compact: boolean } {
     const leftOf = (element: Element | null) => element?.getBoundingClientRect().left ?? rect.left;
     if (HANDLED_TYPES.has(type ?? "")) return { left: leftOf(dom.parentElement), compact: false };
-    if (parent === "callout") return { left: leftOf(dom.closest(".callout")), compact: false };
+    if (parent === "callout") return { left: leftOf(dom.closest('[data-type="callout"]')), compact: false };
     if (parent === "detailsContent") return { left: leftOf(dom.closest('[data-type="details"]')), compact: false };
     return { left: rect.left, compact: parent === "column" };
   }

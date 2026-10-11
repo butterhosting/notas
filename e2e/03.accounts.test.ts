@@ -115,7 +115,7 @@ test("a shared workspace shows up in the switcher, live", async ({ page, browser
   await other.request.post(`/api/workspaces/${kim.workspace}/members`, { data: { username: "lee", role: "read" } });
   // then
   await page.getByRole("button", { name: "workspaces" }).click();
-  await expect(page.getByRole("menuitem").filter({ hasText: "kim · can read" })).toBeVisible();
+  await expect(page.getByRole("menuitem").filter({ hasText: "Personal Workspace (read-only)" }).filter({ hasText: "kim" })).toBeVisible();
   await other.close();
 });
 
@@ -135,4 +135,44 @@ test("a basic auth header works as well as a login, for a proxy doing single sig
   await page.goto("");
   // then
   await expect(page.getByRole("button", { name: "workspaces" })).toContainText("Personal Workspace");
+});
+
+test("users rename themselves, change their password, and delete their own account", async ({ page }) => {
+  // given
+  await AppBoundary.newUser(page);
+  await page.goto("");
+  const dialog = page.getByRole("dialog");
+  const openAccount = async () => {
+    await page.getByRole("button", { name: "workspaces" }).click();
+    await page.getByRole("button", { name: /My account/ }).click();
+  };
+
+  // when
+  await openAccount();
+  await dialog.getByLabel("Username").fill("kimberly");
+  await dialog.getByLabel("New password").fill("a new password");
+  await dialog.getByLabel("Password", { exact: true }).fill("wrong");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  // then
+  await expect(dialog.getByText("That's not your current password.")).toBeVisible();
+
+  // when
+  await dialog.getByLabel("Password", { exact: true }).fill("kim-password");
+  await Promise.all([page.waitForEvent("load"), dialog.getByRole("button", { name: "Save" }).click()]);
+  // then
+  await page.getByRole("button", { name: "workspaces" }).click();
+  await expect(page.getByRole("button", { name: /My account/ })).toContainText("kimberly");
+  await AppBoundary.logout(page);
+  await AppBoundary.login(page, { username: "kimberly", password: "a new password" });
+
+  // when
+  await page.goto("");
+  await openAccount();
+  await dialog.getByRole("button", { name: "Delete account…" }).click();
+  await dialog.getByLabel("Password", { exact: true }).fill("a new password");
+  await dialog.getByLabel("confirmation").fill("kimberly");
+  await dialog.getByRole("button", { name: "Delete account" }).click();
+  // then
+  await expect(page.getByRole("heading", { name: "Log in to Notas" })).toBeVisible();
+  expect((await page.request.post("/api/session", { data: { username: "kimberly", password: "a new password" } })).status()).toEqual(400);
 });

@@ -12,7 +12,7 @@ const Columns = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "columns" }), 0];
+    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "columns", class: "grid grid-flow-col auto-cols-[minmax(0,1fr)] gap-x-8" }), 0];
   },
 
   markdownTokenizer: Directive.container("columns"),
@@ -52,7 +52,7 @@ const Column = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "column" }), 0];
+    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "column", class: "min-w-0" }), 0];
   },
 
   markdownTokenizer: Directive.container("column"),

@@ -106,4 +106,52 @@ describe(UserService.name, () => {
       expect(events).toEqual([expect.objectContaining({ type: Event.Type.workspaces_changed, data: { users: ["lee", "max"] } })]);
     });
   });
+
+  describe("own account", () => {
+    let user: User;
+
+    beforeEach(async () => {
+      user = TestFixture.user({ username: "kim" });
+      const passwordHash = await Bun.password.hash("current password", { algorithm: "bcrypt", cost: 4 });
+      context.userRepositoryMock.findWithPasswordHash.mockResolvedValue({ user, passwordHash });
+      context.userRepositoryMock.update.mockResolvedValue(user);
+      context.userRepositoryMock.delete.mockResolvedValue(user);
+      context.workspaceRepositoryMock.idsOwnedBy.mockResolvedValue([]);
+    });
+
+    it("should take the current password to rename, or to change the password", async () => {
+      // then
+      await expect(service.updateAccount(user, { currentPassword: "wrong", username: "kimberly" })).rejects.toEqual(
+        expect.objectContaining({ problem: "UserError::wrong_password" }),
+      );
+      expect(context.userRepositoryMock.update).not.toHaveBeenCalled();
+
+      // when
+      await service.updateAccount(user, { currentPassword: "current password", username: "kimberly", password: "a new password" });
+      // then
+      const [id, patch, hash] = context.userRepositoryMock.update.mock.calls[0]!;
+      expect(id).toEqual(user.id);
+      expect(patch.username).toEqual("kimberly");
+      expect(await Bun.password.verify("a new password", hash!)).toBeTrue();
+      expect(context.sessionRepositoryMock.deleteForUser).toHaveBeenCalledWith(user.id);
+    });
+
+    it("should hold a new password to the same policy", async () => {
+      // then
+      await expect(service.updateAccount(user, { currentPassword: "current password", password: "short" })).rejects.toEqual(
+        expect.objectContaining({ problem: "ServerError::invalid_request_body" }),
+      );
+    });
+
+    it("should take the password to delete the account", async () => {
+      // then
+      await expect(service.deleteAccount(user, { password: "wrong" })).rejects.toEqual(expect.objectContaining({ problem: "UserError::wrong_password" }));
+      expect(context.userRepositoryMock.delete).not.toHaveBeenCalled();
+
+      // when
+      await service.deleteAccount(user, { password: "current password" });
+      // then
+      expect(context.userRepositoryMock.delete).toHaveBeenCalledWith(user.id);
+    });
+  });
 });

@@ -66,13 +66,13 @@ function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   return (
-    <NodeViewWrapper className="callout" data-type="callout">
+    <NodeViewWrapper className="flex gap-2 rounded bg-c-callout py-4 pr-4 pl-3" data-type="callout">
       <button
         ref={setAnchor}
         contentEditable={false}
         disabled={!editor.isEditable}
         onClick={() => setOpen(true)}
-        className="callout-icon"
+        className="flex size-6 shrink-0 items-center justify-center rounded text-xl leading-none hover:bg-c-hover"
         aria-label="callout icon"
       >
         {node.attrs.icon}
@@ -87,7 +87,7 @@ function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
           />
         </Popover>
       )}
-      <NodeViewContent className="callout-content" />
+      <NodeViewContent className="callout-content min-w-0 flex-1" />
     </NodeViewWrapper>
   );
 }

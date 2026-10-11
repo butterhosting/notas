@@ -146,6 +146,18 @@ export class Server {
           }),
         },
 
+        // the logged-in user's own account; changes take their current password
+        "/api/account": {
+          PATCH: this.withUser(async (request, user) => {
+            const updated: User = await this.userService.updateAccount(user, await request.json());
+            return Response.json(updated);
+          }),
+          DELETE: this.withUser(async (request, user) => {
+            const deleted: User = await this.userService.deleteAccount(user, await request.json());
+            return Response.json(deleted);
+          }),
+        },
+
         "/api/workspaces": {
           GET: this.withUser(async (_request, user) => {
             const workspaces: Workspace[] = await this.workspaceService.list(user);

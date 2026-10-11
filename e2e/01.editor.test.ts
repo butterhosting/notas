@@ -23,7 +23,7 @@ test("what's typed is stored as markdown, directives included", async ({ page })
   await page.reload();
   // then
   await expect(page.getByLabel("page title")).toHaveValue("Trip to Lisbon");
-  await expect(page.locator(".callout")).toContainText("Remember the tram!");
+  await expect(page.locator('[data-type="callout"]')).toContainText("Remember the tram!");
 });
 
 test("a video can be uploaded into a page, and plays from the media endpoint", async ({ page }) => {
@@ -35,7 +35,7 @@ test("a video can be uploaded into a page, and plays from the media endpoint", a
   await PageFlow.insertBlock(page, "video");
   await page.getByLabel("upload file").setInputFiles({ name: "clip.mp4", mimeType: "video/mp4", buffer: Buffer.alloc(64 * 1024, 7) });
   // then
-  const video = page.locator(".media-video video");
+  const video = page.locator('[data-type="video"] video');
   await expect(video).toBeVisible();
   const src = (await video.getAttribute("src"))!;
   expect(src).toMatch(/^\/media\/.+\/clip\.mp4$/);

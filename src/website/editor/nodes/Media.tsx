@@ -101,32 +101,35 @@ const PLACEHOLDERS: Record<Media.Kind, { label: string; accept?: string }> = {
 function MediaView(props: NodeViewProps) {
   const kind = props.extension.name as Media.Kind;
   return (
-    <NodeViewWrapper className={clsx("media", `media-${kind}`)} data-type={kind}>
+    <NodeViewWrapper className="block" data-type={kind}>
       {props.node.attrs.src ? <MediaContent kind={kind} src={props.node.attrs.src} attrs={props.node.attrs} /> : <MediaPlaceholder {...props} />}
     </NodeViewWrapper>
   );
 }
 
+const VISUAL = "mx-auto block max-h-[80vh] max-w-full rounded";
+const FRAME = "aspect-video w-full rounded border-0 bg-c-block";
+
 function MediaContent({ kind, src, attrs }: { kind: Media.Kind; src: string; attrs: Record<string, any> }) {
   switch (kind) {
     case "image":
-      return <img src={src} alt={attrs.alt ?? ""} draggable={false} />;
+      return <img src={src} alt={attrs.alt ?? ""} draggable={false} className={VISUAL} />;
     case "video": {
       const embed = EmbedLink.videoUrl(src);
-      return embed ? <iframe src={embed} allowFullScreen className="aspect-video" /> : <video src={src} controls preload="metadata" />;
+      return embed ? <iframe src={embed} allowFullScreen className={FRAME} /> : <video src={src} controls preload="metadata" className={VISUAL} />;
     }
     case "audio":
-      return <audio src={src} controls preload="metadata" />;
+      return <audio src={src} controls preload="metadata" className="w-full" />;
     case "file":
       return (
-        <a href={src} download={attrs.name ?? true} className="media-file" contentEditable={false}>
+        <a href={src} download={attrs.name ?? true} className="flex items-center gap-2 rounded px-1 py-1.5 no-underline hover:bg-c-hover" contentEditable={false}>
           <Icon.File className="size-5 shrink-0" />
           <span className="truncate">{attrs.name ?? src}</span>
           {attrs.size && <span className="text-c-dark-half text-sm">{formatSize(Number(attrs.size))}</span>}
         </a>
       );
     case "embed":
-      return <iframe src={EmbedLink.url(src)} allowFullScreen className="aspect-video" />;
+      return <iframe src={EmbedLink.url(src)} allowFullScreen className={FRAME} />;
   }
 }
 
@@ -168,7 +171,9 @@ function MediaPlaceholder({ node, updateAttributes, editor, selected, ...props }
   const { label, accept } = PLACEHOLDERS[kind];
   return (
     <>
-      <button ref={setAnchor} contentEditable={false} onClick={() => setOpen(true)} className="media-placeholder">
+      <button ref={setAnchor} contentEditable={false} onClick={() => setOpen(true)}
+        className="flex w-full items-center gap-3 rounded bg-c-callout px-3.5 py-3 text-left text-c-dark-half hover:bg-c-hover"
+      >
         <MediaIcon kind={kind} />
         {progress === undefined ? label : `Uploading… ${Math.round(progress * 100)}%`}
       </button>

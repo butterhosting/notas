@@ -65,7 +65,7 @@ const Tab = Node.create({
       active: {
         default: false,
         parseHTML: (element) => element.hasAttribute("data-active"),
-        renderHTML: ({ active }) => (active ? { "data-active": "" } : {}),
+        renderHTML: ({ active }) => (active ? { "data-active": "" } : { class: "hidden" }),
       },
     };
   },
@@ -93,6 +93,8 @@ const Tab = Node.create({
 });
 
 export const TabsKit = [Tabs, Tab];
+
+const LABEL = "-mb-px flex items-center rounded-t px-2.5 py-1.5 text-sm";
 
 function TabsView({ node, editor, getPos }: NodeViewProps) {
   const tabs: { label: string; active: boolean }[] = [];
@@ -162,8 +164,8 @@ function TabsView({ node, editor, getPos }: NodeViewProps) {
   }, [selected, active, tabs.length]);
 
   return (
-    <NodeViewWrapper className="tabs" data-type="tabs">
-      <div className="tabs-bar" contentEditable={false} role="tablist">
+    <NodeViewWrapper className="rounded-md border border-c-border" data-type="tabs">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-c-border px-1.5 pt-1.5" contentEditable={false} role="tablist">
         {tabs.map(({ label }, index) =>
           renaming === index ? (
             <input
@@ -176,7 +178,7 @@ function TabsView({ node, editor, getPos }: NodeViewProps) {
                 if (e.key === "Enter") rename(index, e.currentTarget.value);
                 if (e.key === "Escape") setRenaming(undefined);
               }}
-              className="tab-label w-28 bg-c-surface outline-none"
+              className={clsx(LABEL, "w-28 bg-c-surface text-c-dark-half outline-none")}
             />
           ) : (
             <button
@@ -186,7 +188,7 @@ function TabsView({ node, editor, getPos }: NodeViewProps) {
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => activate(index, { moveCursor: true })}
               onDoubleClick={() => editor.isEditable && setRenaming(index)}
-              className={clsx("tab-label group/tab", index === active && "is-active")}
+              className={clsx(LABEL, "group/tab hover:bg-c-hover", index === active ? "border-b-2 border-c-dark-full font-medium text-c-dark-full" : "text-c-dark-half")}
             >
               {label}
               {editor.isEditable && tabs.length > 1 && index === active && (
@@ -206,12 +208,12 @@ function TabsView({ node, editor, getPos }: NodeViewProps) {
           ),
         )}
         {editor.isEditable && (
-          <button aria-label="add tab" onClick={add} className="tab-label text-c-dark-half">
+          <button aria-label="add tab" onClick={add} className={clsx(LABEL, "text-c-dark-half hover:bg-c-hover")}>
             <Icon.Plus className="size-3.5" />
           </button>
         )}
       </div>
-      <NodeViewContent className="tabs-panels" />
+      <NodeViewContent className="px-4 py-3" />
     </NodeViewWrapper>
   );
 }

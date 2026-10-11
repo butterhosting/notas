@@ -47,7 +47,7 @@ export function UserModal({ existing, close, done }: Props) {
             autoFocus
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="rounded-md border border-c-border bg-c-bg px-3 py-2 outline-none focus:border-c-accent"
+            className="rounded-md border border-c-border bg-c-bg px-3 py-2 outline-none placeholder:text-c-placeholder focus:border-c-accent"
           />
           <span className="text-xs text-c-dark-half">Lower case letters, digits, and . _ or - in between.</span>
         </label>
@@ -59,7 +59,7 @@ export function UserModal({ existing, close, done }: Props) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={existing ? "Leave empty to keep it" : ""}
-            className="rounded-md border border-c-border bg-c-bg px-3 py-2 outline-none focus:border-c-accent"
+            className="rounded-md border border-c-border bg-c-bg px-3 py-2 outline-none placeholder:text-c-placeholder focus:border-c-accent"
           />
           <span className="text-xs text-c-dark-half">At least 8 characters.{existing && " Changing it logs them out everywhere."}</span>
         </label>

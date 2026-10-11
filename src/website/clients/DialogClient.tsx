@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { ConfirmModal } from "../comps/ConfirmModal";
 import { DialogManager } from "../comps/DialogManager";
 import { SearchModal } from "../comps/SearchModal";
+import { AccountModal } from "../comps/AccountModal";
 import { UserModal } from "../comps/UserModal";
 import { WorkspaceModal } from "../comps/WorkspaceModal";
 import { WorkspaceSettingsModal } from "../comps/WorkspaceSettingsModal";
@@ -32,6 +33,10 @@ export class DialogClient {
 
   public user(existing?: User): Promise<"cancel" | User> {
     return this.open<User>((resolve) => <UserModal existing={existing} close={() => resolve("cancel")} done={resolve} />);
+  }
+
+  public account(user: User): Promise<"cancel" | "updated" | "deleted"> {
+    return this.open<"updated" | "deleted">((resolve) => <AccountModal user={user} close={() => resolve("cancel")} done={resolve} />);
   }
 
   public workspace(existing?: Workspace): Promise<"cancel" | Workspace> {

@@ -1,4 +1,5 @@
 import { Page } from "@/models/Page";
+import { User } from "@/models/User";
 import { Workspace } from "@/models/Workspace";
 import clsx from "clsx";
 import { ComponentProps, createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
@@ -348,21 +349,27 @@ namespace Internal {
       }
     }
 
+    async function account(user: User) {
+      setOpen(false);
+      const result = await dialogClient.account(user);
+      if (result === "updated") location.reload();
+      if (result === "deleted") location.assign(Route.home());
+    }
+
     async function logout() {
       await authClient.logout();
       location.assign(Route.home());
     }
 
     const item = (workspace: Workspace) => (
-      <button key={workspace.id} role="menuitem" onClick={() => go(workspace)} className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-c-hover">
+      <button key={workspace.id} role="menuitem" onClick={() => go(workspace)} className="flex w-full items-start gap-2 rounded px-2 py-1 text-left hover:bg-c-hover">
         <WorkspaceIcon workspace={workspace} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate">{workspace.name}</span>
-          {workspace.role !== "owner" && (
-            <span className="truncate text-xs text-c-dark-half">
-              {workspace.owner.username} · {workspace.role === "write" ? "can edit" : "can read"}
-            </span>
-          )}
+          <span className="truncate">
+            {workspace.name}
+            {workspace.role === "read" && <span className="text-c-dark-half"> (read-only)</span>}
+          </span>
+          {workspace.role !== "owner" && <span className="truncate text-xs text-c-dark-half">{workspace.owner.username}</span>}
         </span>
         {workspace.id === current?.id && <span className="text-c-accent">✓</span>}
       </button>
@@ -377,13 +384,12 @@ namespace Internal {
           className="flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 font-semibold text-c-dark-full hover:bg-c-hover"
         >
           {current ? <WorkspaceIcon workspace={current} /> : <img src="/favicon.svg" alt="" className="size-5" />}
-          <span className="truncate">{current?.name ?? "Notas"}</span>
+          <span className="flex-1 truncate text-left">{current?.name ?? "Notas"}</span>
           <Icon.Chevron className="size-3 shrink-0 rotate-90 text-c-dark-half" />
         </button>
         {open && (
           <Popover anchor={anchor} onClose={() => setOpen(false)} className="flex max-h-[70vh] w-72 flex-col overflow-y-auto p-1.5 text-sm" >
-            <div className="px-2 pt-1 pb-1.5 text-xs text-c-dark-half">{me?.kind === "user" && `Logged in as ${me.user.username}`}</div>
-            {own.length > 0 && <div className="px-2 pt-1.5 pb-1 text-xs font-medium text-c-dark-half">Your workspaces</div>}
+            {own.length > 0 && <div className="px-2 pt-1 pb-1 text-xs font-medium text-c-dark-half">Your workspaces</div>}
             {own.map(item)}
             {shared.length > 0 && <div className="px-2 pt-2.5 pb-1 text-xs font-medium text-c-dark-half">Shared with you</div>}
             {shared.map(item)}
@@ -396,6 +402,12 @@ namespace Internal {
             <button onClick={create} className="flex w-full items-center gap-2 rounded px-2 py-1 hover:bg-c-hover">
               <Icon.Plus className="size-4" /> New workspace
             </button>
+            <div className="my-1.5 border-t border-c-border" />
+            {me?.kind === "user" && (
+              <button onClick={() => account(me.user)} className="flex w-full items-center gap-2 rounded px-2 py-1 hover:bg-c-hover">
+                <Icon.User className="size-4" /> My account <span className="text-c-dark-half">({me.user.username})</span>
+              </button>
+            )}
             <button onClick={logout} className="flex w-full items-center gap-2 rounded px-2 py-1 hover:bg-c-hover">
               <Icon.Logout className="size-4" /> Log out
             </button>
@@ -539,7 +551,7 @@ namespace Internal {
     const preference = useSyncExternalStore(themeClient.subscribe, themeClient.snapshot);
     const icons = { system: Icon.Monitor, light: Icon.Sun, dark: Icon.Moon };
     return (
-      <div role="radiogroup" aria-label="theme" className="flex w-fit shrink-0 rounded-md bg-c-hover p-0.5">
+      <div role="radiogroup" aria-label="theme" className="flex rounded-md bg-c-hover p-0.5">
         {ThemeClient.PREFERENCES.map((option) => {
           const ThemeIcon = icons[option];
           return (
@@ -551,7 +563,7 @@ namespace Internal {
               title={option[0]!.toUpperCase() + option.slice(1)}
               onClick={() => themeClient.set(option)}
               className={clsx(
-                "flex size-6 items-center justify-center rounded",
+                "flex h-6 flex-1 items-center justify-center rounded",
                 preference === option ? "bg-c-surface text-c-dark-full shadow-sm" : "hover:text-c-dark-full",
               )}
             >
