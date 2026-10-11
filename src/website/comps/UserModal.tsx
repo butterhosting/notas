@@ -1,3 +1,5 @@
+import { ServerError } from "@/errors/ServerError";
+import { UserError } from "@/errors/UserError";
 import { User } from "@/models/User";
 import { ProblemDetails } from "@/models/internal/ProblemDetails";
 import { useState } from "react";
@@ -80,8 +82,8 @@ export function UserModal({ existing, close, done }: Props) {
 export namespace UserModal {
   export function describe(e: unknown): string {
     if (!ProblemDetails.isInstance(e)) return "Something went wrong.";
-    if (e.problem === "UserError::username_taken") return "That username is taken.";
-    if (e.problem === "ServerError::invalid_request_body") {
+    if (UserError.username_taken.matches(e)) return "That username is taken.";
+    if (ServerError.invalid_request_body.matches(e)) {
       const fields: string[] = e.details?.issues?.map((issue: { field: string }) => issue.field) ?? [];
       if (fields.includes("username")) return "That username isn't allowed (and admin is reserved).";
       if (fields.includes("password")) return "The password needs at least 8 characters.";

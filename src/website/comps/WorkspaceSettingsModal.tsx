@@ -1,5 +1,5 @@
+import { WorkspaceError } from "@/errors/WorkspaceError";
 import { Member } from "@/models/Member";
-import { ProblemDetails } from "@/models/internal/ProblemDetails";
 import { Workspace } from "@/models/Workspace";
 import clsx from "clsx";
 import { useState } from "react";
@@ -55,7 +55,7 @@ function OwnerSettings({ workspace, done }: { workspace: Workspace; done: Props[
       setError(undefined);
       workspaceIndexClient.upsert(await workspaceClient.rename(workspace.id, name));
     } catch (e) {
-      setError(ProblemDetails.isInstance(e) && e.problem === "WorkspaceError::name_taken" ? "You already have a workspace with that name." : "Couldn't rename it.");
+      setError(WorkspaceError.name_taken.matches(e) ? "You already have a workspace with that name." : "Couldn't rename it.");
     }
   }
 
@@ -67,11 +67,10 @@ function OwnerSettings({ workspace, done }: { workspace: Workspace; done: Props[
       setMembers([...(members ?? []).filter(({ user }) => user.id !== member.user.id), member]);
       setUsername("");
     } catch (e) {
-      const problem = ProblemDetails.isInstance(e) ? e.problem : "";
       setError(
-        problem === "WorkspaceError::user_not_found"
+        WorkspaceError.user_not_found.matches(e)
           ? `There's no user called ${username.trim()}.`
-          : problem === "WorkspaceError::owner_cannot_be_member"
+          : WorkspaceError.owner_cannot_be_member.matches(e)
             ? "That's you; you own this workspace."
             : "Couldn't share it.",
       );

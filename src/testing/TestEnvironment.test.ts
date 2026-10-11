@@ -144,6 +144,7 @@ export namespace TestEnvironment {
       extend: mock(),
       delete: mock(),
       deleteForUser: mock(),
+      deleteAdmin: mock(),
       deleteExpired: mock(),
       deleteAll: mock(),
     });

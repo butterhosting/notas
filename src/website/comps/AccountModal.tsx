@@ -1,5 +1,5 @@
+import { UserError } from "@/errors/UserError";
 import { User } from "@/models/User";
-import { ProblemDetails } from "@/models/internal/ProblemDetails";
 import { useState } from "react";
 import { AuthClient } from "../clients/AuthClient";
 import { UserClient } from "../clients/UserClient";
@@ -138,7 +138,7 @@ function PasswordField(props: {
 
 export namespace AccountModal {
   export function describe(e: unknown): string {
-    if (ProblemDetails.isInstance(e) && e.problem === "UserError::wrong_password") return "That's not your current password.";
+    if (UserError.wrong_password.matches(e)) return "That's not your current password.";
     return UserModal.describe(e);
   }
 }

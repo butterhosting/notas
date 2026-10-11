@@ -1,18 +1,32 @@
+import { Initialize } from "@/Initialize";
 import { Session } from "@/models/internal/Session";
 import { TestEnvironment } from "@/testing/TestEnvironment.test";
 import { TestFixture } from "@/testing/TestFixture.test";
 import { Temporal } from "@js-temporal/polyfill";
-import { afterEach, beforeEach, describe, expect, it, jest, setSystemTime } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, jest, Mock, setSystemTime, spyOn } from "bun:test";
 import { AuthService } from "./AuthService";
 
 describe(AuthService.name, () => {
   let context: TestEnvironment.Context;
   let service: AuthService;
+  let warn: Mock<typeof console.warn>;
 
   beforeEach(async () => {
     context = await TestEnvironment.initialize();
     service = new AuthService(context.env, context.sessionRepositoryMock.cast(), context.userRepositoryMock.cast());
     context.sessionRepositoryMock.create.mockImplementation(async (session: Session) => session);
+    warn = spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    setSystemTime();
+  });
+
+  it("should forget the admin's sessions at startup, since only a restart can change their password", async () => {
+    // when
+    await Initialize.runAll(service);
+    // then
+    expect(context.sessionRepositoryMock.deleteAdmin).toHaveBeenCalledTimes(1);
   });
 
   describe("login", () => {
@@ -54,6 +68,84 @@ describe(AuthService.name, () => {
         await expect(service.login(credentials)).rejects.toEqual(expect.objectContaining({ problem: "AuthError::invalid_credentials" }));
       }
       expect(context.sessionRepositoryMock.create).not.toHaveBeenCalled();
+    });
+
+    it("should log a failed login with the username quoted, so it can't forge a line of its own", async () => {
+      // when
+      await service.login({ username: "kim\nforged", password: "wrong" }, "10.0.0.7").catch(() => {});
+      // then
+      expect(String(warn.mock.calls[0]!.at(-1))).toEqual('Failed login for "kim\\nforged" from 10.0.0.7');
+    });
+  });
+
+  describe("throttle", () => {
+    const tooMany = (retryAfter: number) => expect.objectContaining({ problem: "AuthError::too_many_attempts", details: { retryAfter } });
+
+    it("should hold a username up after five failed attempts, twice as long each time, whoever the username is", async () => {
+      // given
+      context.userRepositoryMock.findWithPasswordHash.mockResolvedValue(undefined);
+      setSystemTime(new Date("2026-10-11T10:00:00Z"));
+      for (let i = 0; i < 5; i++) {
+        await expect(service.login({ username: "nobody", password: `guess ${i}` })).rejects.toEqual(expect.objectContaining({ problem: "AuthError::invalid_credentials" }));
+      }
+
+      // then
+      await expect(service.login({ username: "nobody", password: "guess 5" })).rejects.toEqual(tooMany(1));
+      await expect(service.login({ username: "somebody", password: "guess" })).rejects.toEqual(expect.objectContaining({ problem: "AuthError::invalid_credentials" }));
+
+      // when
+      setSystemTime(new Date("2026-10-11T10:00:01Z"));
+      await service.login({ username: "nobody", password: "guess 6" }).catch(() => {});
+      // then
+      await expect(service.login({ username: "nobody", password: "guess 7" })).rejects.toEqual(tooMany(2));
+    });
+
+    it("should count a burst of parallel guesses before any password is checked", async () => {
+      // given
+      context.userRepositoryMock.findWithPasswordHash.mockResolvedValue({ user: TestFixture.user(), passwordHash: await Bun.password.hash("right", { algorithm: "bcrypt", cost: 4 }) });
+      const verify = spyOn(Bun.password, "verify");
+
+      // when
+      const results = await Promise.allSettled(Array.from({ length: 20 }, (_, i) => service.login({ username: "kim", password: `guess ${i}` })));
+      // then
+      expect(verify).toHaveBeenCalledTimes(5);
+      expect(results.filter((result) => result.status === "rejected" && result.reason.problem === "AuthError::too_many_attempts")).toHaveLength(15);
+    });
+
+    it("should forget the failures once the right password comes in", async () => {
+      // given
+      const user = TestFixture.user({ username: "kim" });
+      context.userRepositoryMock.findWithPasswordHash.mockResolvedValue({ user, passwordHash: await Bun.password.hash("right", { algorithm: "bcrypt", cost: 4 }) });
+      for (let i = 0; i < 4; i++) {
+        await service.login({ username: "kim", password: "wrong" }).catch(() => {});
+      }
+
+      // when
+      await service.login({ username: "kim", password: "right" });
+      // then
+      for (let i = 0; i < 5; i++) {
+        await expect(service.login({ username: "kim", password: "wrong" })).rejects.toEqual(expect.objectContaining({ problem: "AuthError::invalid_credentials" }));
+      }
+    });
+
+    it("should wait 15 minutes at most, and forget a username left alone for an hour", async () => {
+      // given
+      context.userRepositoryMock.findWithPasswordHash.mockResolvedValue(undefined);
+      let now = Temporal.Instant.from("2026-10-11T10:00:00Z");
+      for (let i = 0; i < 20; i++) {
+        setSystemTime(new Date(now.epochMilliseconds));
+        await service.login({ username: "kim", password: "wrong" }).catch(() => {});
+        now = now.add({ minutes: 15 });
+      }
+
+      // then
+      setSystemTime(new Date(now.subtract({ seconds: 1 }).epochMilliseconds));
+      await expect(service.login({ username: "kim", password: "wrong" })).rejects.toEqual(tooMany(1));
+
+      // when
+      setSystemTime(new Date(now.add({ minutes: 45 }).epochMilliseconds));
+      // then
+      await expect(service.login({ username: "kim", password: "wrong" })).rejects.toEqual(expect.objectContaining({ problem: "AuthError::invalid_credentials" }));
     });
   });
 
@@ -106,10 +198,6 @@ describe(AuthService.name, () => {
 
   describe("basic auth", () => {
     const basic = (username: string, password: string) => `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
-
-    afterEach(() => {
-      setSystemTime();
-    });
 
     it("should let a basic auth header in, the admin's too, and remember it rather than check the password every time", async () => {
       // given
@@ -172,6 +260,21 @@ describe(AuthService.name, () => {
       await service.authenticate({ authorization: basic("kim", "secret") });
       // then
       expect(verify).toHaveBeenCalledTimes(2);
+    });
+
+    it("should be held up after failed attempts like a login, except for a header already remembered", async () => {
+      // given
+      const user = TestFixture.user({ username: "kim" });
+      context.userRepositoryMock.findWithPasswordHash.mockResolvedValue({ user, passwordHash: await Bun.password.hash("right", { algorithm: "bcrypt", cost: 4 }) });
+      await service.authenticate({ authorization: basic("kim", "right") });
+
+      // when
+      for (let i = 0; i < 5; i++) {
+        expect(await service.authenticate({ authorization: basic("kim", `guess ${i}`) })).toBeUndefined();
+      }
+      // then
+      await expect(service.authenticate({ authorization: basic("kim", "guess 5") })).rejects.toEqual(expect.objectContaining({ problem: "AuthError::too_many_attempts" }));
+      expect(await service.authenticate({ authorization: basic("kim", "right") })).toEqual(expect.objectContaining({ kind: "user" }));
     });
 
     it("should prefer a valid session, and ignore a header that isn't basic auth", async () => {

@@ -7,7 +7,8 @@ export type Event =
   | Event.PageTrashed
   | Event.PageRestored
   | Event.PageDeleted
-  | Event.WorkspacesChanged;
+  | Event.WorkspacesChanged
+  | Event.SessionsRevoked;
 
 export namespace Event {
   export enum Type {
@@ -17,6 +18,7 @@ export namespace Event {
     page_restored = "page_restored",
     page_deleted = "page_deleted",
     workspaces_changed = "workspaces_changed",
+    sessions_revoked = "sessions_revoked",
   }
 
   type Instance<T extends Event.Type, D> = {
@@ -38,4 +40,7 @@ export namespace Event {
 
   /** For the users whose list of workspaces changed. */
   export type WorkspacesChanged = Instance<Event.Type.workspaces_changed, { users: string[] }>;
+
+  /** The user's sessions ended (a new password, a deleted account): what they authenticated must end too. */
+  export type SessionsRevoked = Instance<Event.Type.sessions_revoked, { user: string }>;
 }

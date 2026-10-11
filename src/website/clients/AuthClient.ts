@@ -1,5 +1,5 @@
+import { ServerError } from "@/errors/ServerError";
 import { Me } from "@/models/Me";
-import { ProblemDetails } from "@/models/internal/ProblemDetails";
 import { Yesttp } from "yesttp";
 
 export class AuthClient {
@@ -16,7 +16,7 @@ export class AuthClient {
       const { json } = await this.yesttp.get<unknown>("/session");
       return (this._current = Me.parse(json));
     } catch (e) {
-      if (ProblemDetails.isInstance(e) && e.problem === "ServerError::unauthorized") {
+      if (ServerError.unauthorized.matches(e)) {
         return undefined;
       }
       throw e;

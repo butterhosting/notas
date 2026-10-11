@@ -74,12 +74,14 @@ describe(UserService.name, () => {
       // then
       expect(context.sessionRepositoryMock.deleteForUser).not.toHaveBeenCalled();
       expect(context.userRepositoryMock.update.mock.calls[0]![2]).toBeUndefined();
+      expect(events).toEqual([]);
 
       // when
       await service.update(user.id, { password: "a new password" });
       // then
       expect(context.sessionRepositoryMock.deleteForUser).toHaveBeenCalledWith(user.id);
       expect(await Bun.password.verify("a new password", context.userRepositoryMock.update.mock.calls[1]![2]!)).toBeTrue();
+      expect(events).toEqual([expect.objectContaining({ type: Event.Type.sessions_revoked, data: { user: user.id } })]);
     });
 
     it("should throw when the user doesn't exist", async () => {
@@ -92,7 +94,7 @@ describe(UserService.name, () => {
   });
 
   describe("delete", () => {
-    it("should remove the files of their workspaces, and tell whoever those were shared with", async () => {
+    it("should remove the files of their workspaces, end their sessions, and tell whoever those were shared with", async () => {
       // given
       const user = TestFixture.user();
       context.workspaceRepositoryMock.idsOwnedBy.mockResolvedValue(["w1", "w2"]);
@@ -103,7 +105,10 @@ describe(UserService.name, () => {
       await service.delete(user.id);
       // then
       expect(context.mediaRepositoryMock.deleteWorkspaceFiles.mock.calls.map(([id]) => id)).toEqual(["w1", "w2"]);
-      expect(events).toEqual([expect.objectContaining({ type: Event.Type.workspaces_changed, data: { users: ["lee", "max"] } })]);
+      expect(events).toEqual([
+        expect.objectContaining({ type: Event.Type.sessions_revoked, data: { user: user.id } }),
+        expect.objectContaining({ type: Event.Type.workspaces_changed, data: { users: ["lee", "max"] } }),
+      ]);
     });
   });
 

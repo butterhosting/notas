@@ -1,3 +1,4 @@
+import { PageError } from "@/errors/PageError";
 import { Page } from "@/models/Page";
 import { Workspace } from "@/models/Workspace";
 import { ProblemDetails } from "@/models/internal/ProblemDetails";
@@ -125,7 +126,7 @@ function Document({ page, onRestore }: { page: Page; onRestore: () => void }) {
       pageIndexClient.upsert(Page.summarize(updated));
     } catch (e) {
       current.pending ??= markdown;
-      setState(ProblemDetails.isInstance(e) && e.problem === "PageError::revision_conflict" ? "conflict" : "error");
+      setState(PageError.revision_conflict.matches(e) ? "conflict" : "error");
       return;
     } finally {
       current.saving = false;

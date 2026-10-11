@@ -1,4 +1,5 @@
 import { Env } from "@/Env";
+import { AuthError } from "@/errors/AuthError";
 import { ServerError } from "@/errors/ServerError";
 import { Initialize } from "@/Initialize";
 import index from "@/website/index.html";
@@ -49,10 +50,7 @@ export class Server {
       fetch: this.handleFetch(async (request, server) => {
         const { pathname } = new URL(request.url);
         if (pathname === "/socket") {
-          const me = await this.authService.authenticate({
-            token: new Bun.CookieMap(request.headers.get("cookie") ?? "").get(AuthService.COOKIE),
-            authorization: request.headers.get("authorization"),
-          });
+          const me = await this.authService.authenticate(this.credentials(request));
           if (me?.kind !== "user") {
             return Response.json(ServerError.unauthorized().problemDetails(), { status: 401 });
           }
@@ -101,7 +99,7 @@ export class Server {
 
         "/api/session": {
           POST: this.handleRoute(async (request) => {
-            const { token, me } = await this.authService.login(await request.json());
+            const { token, me } = await this.authService.login(await Server.json(request, Server.LOGIN_LIMIT), this.client(request));
             request.cookies.set(AuthService.COOKIE, token, {
               httpOnly: true,
               sameSite: "lax",
@@ -112,7 +110,7 @@ export class Server {
             return Response.json(me);
           }),
           GET: this.handleRoute(async (request) => {
-            const me: Me | undefined = await this.authService.authenticate(Server.credentials(request));
+            const me: Me | undefined = await this.authService.authenticate(this.credentials(request));
             if (!me) {
               throw ServerError.unauthorized();
             }
@@ -131,13 +129,13 @@ export class Server {
             return Response.json(users);
           }),
           POST: this.withAdmin(async (request) => {
-            const user: User = await this.userService.create(await request.json());
+            const user: User = await this.userService.create(await Server.json(request));
             return Response.json(user);
           }),
         },
         "/api/users/:id": {
           PATCH: this.withAdmin(async (request) => {
-            const user: User = await this.userService.update(request.params.id, await request.json());
+            const user: User = await this.userService.update(request.params.id, await Server.json(request));
             return Response.json(user);
           }),
           DELETE: this.withAdmin(async ({ params }) => {
@@ -149,11 +147,11 @@ export class Server {
         // the logged-in user's own account; changes take their current password
         "/api/account": {
           PATCH: this.withUser(async (request, user) => {
-            const updated: User = await this.userService.updateAccount(user, await request.json());
+            const updated: User = await this.userService.updateAccount(user, await Server.json(request));
             return Response.json(updated);
           }),
           DELETE: this.withUser(async (request, user) => {
-            const deleted: User = await this.userService.deleteAccount(user, await request.json());
+            const deleted: User = await this.userService.deleteAccount(user, await Server.json(request));
             return Response.json(deleted);
           }),
         },
@@ -164,7 +162,7 @@ export class Server {
             return Response.json(workspaces);
           }),
           POST: this.withUser(async (request, user) => {
-            const workspace: Workspace = await this.workspaceService.create(user, await request.json());
+            const workspace: Workspace = await this.workspaceService.create(user, await Server.json(request));
             return Response.json(workspace);
           }),
         },
@@ -174,7 +172,7 @@ export class Server {
             return Response.json(workspace);
           }),
           PATCH: this.withUser(async (request, user) => {
-            const workspace: Workspace = await this.workspaceService.rename(user, request.params.id, await request.json());
+            const workspace: Workspace = await this.workspaceService.rename(user, request.params.id, await Server.json(request));
             return Response.json(workspace);
           }),
           DELETE: this.withUser(async ({ params }, user) => {
@@ -188,13 +186,13 @@ export class Server {
             return Response.json(members);
           }),
           POST: this.withUser(async (request, user) => {
-            const member: Member = await this.workspaceService.share(user, request.params.id, await request.json());
+            const member: Member = await this.workspaceService.share(user, request.params.id, await Server.json(request));
             return Response.json(member);
           }),
         },
         "/api/workspaces/:id/members/:user": {
           PATCH: this.withUser(async (request, user) => {
-            const member: Member = await this.workspaceService.changeRole(user, request.params.id, request.params.user, await request.json());
+            const member: Member = await this.workspaceService.changeRole(user, request.params.id, request.params.user, await Server.json(request));
             return Response.json(member);
           }),
           DELETE: this.withUser(async ({ params }, user) => {
@@ -212,7 +210,7 @@ export class Server {
             return Response.json(pages);
           }),
           POST: this.withUser(async (request, user) => {
-            const page: Page = await this.pageService.create(user, request.params.id, await request.json());
+            const page: Page = await this.pageService.create(user, request.params.id, await Server.json(request));
             return Response.json(page);
           }),
         },
@@ -239,7 +237,7 @@ export class Server {
             return Response.json(page);
           }),
           PATCH: this.withUser(async (request, user) => {
-            const page: Page = await this.pageService.update(user, request.params.id, await request.json());
+            const page: Page = await this.pageService.update(user, request.params.id, await Server.json(request));
             return Response.json(page);
           }),
           DELETE: this.withUser(async ({ params }, user) => {
@@ -274,25 +272,7 @@ export class Server {
           }),
         },
 
-        // never in production; the e2e suite seeds through these
-        "/api/restricted/purge": {
-          POST: this.handleRoute(async () => {
-            if (this.env.NOTAS_STAGE !== "prod") {
-              await this.restrictedService.purge();
-              return new Response();
-            }
-            return Response.json(ServerError.route_not_found().problemDetails(), { status: 404 });
-          }),
-        },
-        "/api/restricted/seed": {
-          POST: this.handleRoute(async () => {
-            if (this.env.NOTAS_STAGE !== "prod") {
-              await this.restrictedService.seed();
-              return new Response();
-            }
-            return Response.json(ServerError.route_not_found().problemDetails(), { status: 404 });
-          }),
-        },
+        ...this.restrictedRoutes(),
       },
 
       error: (e) => this.handleError(e),
@@ -330,6 +310,27 @@ export class Server {
     console.log(`\n  👋 \x1b[1mNotas stopped\x1b[0m\n`);
   }
 
+  // never routed in production; the e2e suite seeds through these. Typed `{}`: Bun's route types needn't know of them.
+  private restrictedRoutes(): {} {
+    if (this.env.NOTAS_STAGE === "prod") {
+      return {};
+    }
+    return {
+      "/api/restricted/purge": {
+        POST: this.handleRoute(async () => {
+          await this.restrictedService.purge();
+          return new Response();
+        }),
+      },
+      "/api/restricted/seed": {
+        POST: this.handleRoute(async () => {
+          await this.restrictedService.seed();
+          return new Response();
+        }),
+      },
+    };
+  }
+
   private handleFetch<C>(
     fn: (request: Request, server: Bun.Server<C>) => Response | Promise<Response>,
   ): (request: Request, server: Bun.Server<C>) => Promise<Response> {
@@ -349,22 +350,43 @@ export class Server {
   }
 
   private withUser<T extends string>(fn: (req: Bun.BunRequest<T>, user: User) => Response | Promise<Response>) {
-    return this.handleRoute<T>(async (request) => fn(request, await this.authService.requireUser(Server.credentials(request))));
+    return this.handleRoute<T>(async (request) => fn(request, await this.authService.requireUser(this.credentials(request))));
   }
 
   private withAdmin<T extends string>(fn: (req: Bun.BunRequest<T>) => Response | Promise<Response>) {
     return this.handleRoute<T>(async (request) => {
-      await this.authService.requireAdmin(Server.credentials(request));
+      await this.authService.requireAdmin(this.credentials(request));
       return await fn(request);
     });
   }
 
+  private credentials(request: Request): AuthService.Credentials {
+    return {
+      token: new Bun.CookieMap(request.headers.get("cookie") ?? "").get(AuthService.COOKIE),
+      authorization: request.headers.get("authorization"),
+      client: this.client(request),
+    };
+  }
+
+  // behind a proxy, the peer is the proxy; what it forwards is only as trustworthy as whatever else can reach the port
+  private client(request: Request): string {
+    const peer = this.server?.requestIP(request)?.address ?? "an unknown address";
+    const forwarded = request.headers.get("x-forwarded-for");
+    return forwarded ? `${peer}, forwarded for ${JSON.stringify(forwarded)}` : peer;
+  }
+
   private async handleError(e: ErrorLike): Promise<Response> {
     if (Yexception.isInstance(e)) {
+      if (AuthError.too_many_attempts.matches(e)) {
+        return Response.json(e.problemDetails(), { status: 429, headers: { "retry-after": String(e.details.retryAfter) } });
+      }
+      if (ServerError.request_body_too_large.matches(e)) {
+        return Response.json(e.problemDetails(), { status: 413 });
+      }
       if (ServerError.unauthorized.matches(e)) {
         return Response.json(e.problemDetails(), { status: 401 });
       }
-      if (ServerError.forbidden.matches(e)) {
+      if (ServerError.forbidden.matches(e) || ServerError.cross_origin_request.matches(e)) {
         return Response.json(e.problemDetails(), { status: 403 });
       }
       return Response.json(e.problemDetails(), { status: 400 });
@@ -378,8 +400,32 @@ export class Server {
 }
 
 export namespace Server {
-  export function credentials(request: Request & { cookies: Bun.CookieMap }): AuthService.Credentials {
-    return { token: request.cookies.get(AuthService.COOKIE), authorization: request.headers.get("authorization") };
+  // a username and a password
+  export const LOGIN_LIMIT = 4 * 1024;
+  // far beyond any page body; Bun's own limit is the upload limit, which only the media route needs
+  export const JSON_LIMIT = 16 * 1024 * 1024;
+
+  /** Unlike `request.json()`, stops reading past the limit: one 700 MB login body grew the process by 1.2 GB. */
+  export async function json(request: Request, limit = JSON_LIMIT): Promise<any> {
+    if (Number(request.headers.get("content-length")) > limit) {
+      throw ServerError.request_body_too_large({ limit });
+    }
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    if (request.body) {
+      for await (const chunk of request.body) {
+        size += chunk.byteLength;
+        if (size > limit) {
+          throw ServerError.request_body_too_large({ limit });
+        }
+        chunks.push(chunk);
+      }
+    }
+    try {
+      return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {
+      throw ServerError.invalid_request_body();
+    }
   }
 
   // behind a TLS-terminating proxy, only the forwarded protocol tells

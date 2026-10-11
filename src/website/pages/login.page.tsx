@@ -1,3 +1,4 @@
+import { AuthError } from "@/errors/AuthError";
 import { Me } from "@/models/Me";
 import { ProblemDetails } from "@/models/internal/ProblemDetails";
 import { useState } from "react";
@@ -23,7 +24,7 @@ export function loginPage({ onLogin }: { onLogin: (me: Me) => void }) {
       setError(undefined);
       onLogin(await authClient.login(username, password));
     } catch (e) {
-      setError(ProblemDetails.isInstance(e) && e.problem === "AuthError::invalid_credentials" ? "That username and password don't match." : "Something went wrong.");
+      setError(problemMessage(e));
     } finally {
       setBusy(false);
     }
@@ -71,4 +72,16 @@ export function loginPage({ onLogin }: { onLogin: (me: Me) => void }) {
       <Lockup.Large />
     </main>
   );
+}
+
+function problemMessage(e: unknown): string {
+  if (AuthError.invalid_credentials.matches(e)) {
+    return "That username and password don't match.";
+  }
+  // `matches` narrows nothing; reading the details still takes the guard
+  if (ProblemDetails.isInstance(e) && AuthError.too_many_attempts.matches(e)) {
+    const seconds: number = e.details?.retryAfter ?? 1;
+    return `Too many attempts. Try again in ${seconds < 60 ? `${seconds} s` : `${Math.ceil(seconds / 60)} min`}.`;
+  }
+  return "Something went wrong.";
 }

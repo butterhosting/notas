@@ -56,6 +56,7 @@ export class UserService {
     }
     if (password !== undefined) {
       await this.sessionRepository.deleteForUser(id);
+      this.eventBus.publish(Event.Type.sessions_revoked, { user: id });
     }
     return user;
   }
@@ -90,6 +91,7 @@ export class UserService {
     }
     await Promise.all(owned.map((workspace) => this.mediaRepository.deleteWorkspaceFiles(workspace)));
     audience.delete(id);
+    this.eventBus.publish(Event.Type.sessions_revoked, { user: id });
     this.eventBus.publish(Event.Type.workspaces_changed, { users: [...audience] });
     return user;
   }

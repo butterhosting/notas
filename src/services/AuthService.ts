@@ -2,6 +2,8 @@ import { Env } from "@/Env";
 import { AuthError } from "@/errors/AuthError";
 import { ServerError } from "@/errors/ServerError";
 import { ZodProblem } from "@/helpers/ZodIssues";
+import { Initialize } from "@/Initialize";
+import { Logger } from "@/Logger";
 import { Me } from "@/models/Me";
 import { User } from "@/models/User";
 import { SessionRepository } from "@/repositories/SessionRepository";
@@ -10,8 +12,10 @@ import { Temporal } from "@js-temporal/polyfill";
 import z from "zod/v4";
 
 export class AuthService {
+  private readonly log = new Logger(__filename);
   private dummyHash?: Promise<string>;
   private readonly verifiedHeaders = new VerifiedHeaders();
+  private readonly throttle = new LoginThrottle();
 
   public constructor(
     private readonly env: Env.Private,
@@ -19,9 +23,15 @@ export class AuthService {
     private readonly userRepository: UserRepository,
   ) {}
 
-  public async login(unknown: z.input<typeof AuthService.Login>): Promise<{ token: string; me: Me }> {
+  /** The admin's password comes from the environment, so it can only have changed across a restart. */
+  @Initialize
+  public async forgetAdminSessions(): Promise<void> {
+    await this.sessionRepository.deleteAdmin();
+  }
+
+  public async login(unknown: z.input<typeof AuthService.Login>, client?: string): Promise<{ token: string; me: Me }> {
     const { username, password } = AuthService.Login.parse(unknown);
-    const verified = await this.verify(username, password);
+    const verified = await this.verify(username, password, client);
     if (!verified) {
       throw AuthError.invalid_credentials();
     }
@@ -38,7 +48,7 @@ export class AuthService {
   }
 
   public async authenticate(credentials: AuthService.Credentials): Promise<Me | undefined> {
-    return (await this.fromSession(credentials.token)) ?? (await this.fromBasic(credentials.authorization));
+    return (await this.fromSession(credentials.token)) ?? (await this.fromBasic(credentials.authorization, credentials.client));
   }
 
   public async logout(token: string | null | undefined): Promise<void> {
@@ -85,7 +95,7 @@ export class AuthService {
    * Bcrypt costs ~58 ms, too much for a header an SSO proxy sends with every request. A verified header skips it for a
    * while, for as long as the user's stored hash is still the one its password was checked against.
    */
-  private async fromBasic(authorization: string | null | undefined): Promise<Me | undefined> {
+  private async fromBasic(authorization: string | null | undefined, client: string | undefined): Promise<Me | undefined> {
     const credentials = AuthService.parseBasic(authorization);
     if (!authorization || !credentials) {
       return;
@@ -100,7 +110,7 @@ export class AuthService {
       this.verifiedHeaders.forget(authorization);
     }
 
-    const verified = await this.verify(credentials.username, credentials.password);
+    const verified = await this.verify(credentials.username, credentials.password, client);
     if (verified) {
       this.verifiedHeaders.remember(authorization, { username: credentials.username, passwordHash: verified.passwordHash });
     }
@@ -108,10 +118,16 @@ export class AuthService {
   }
 
   /** Unknown users cost a bcrypt verify too, so the timing doesn't reveal which usernames exist. */
-  private async verify(username: string, password: string): Promise<{ me: Me; passwordHash: string } | undefined> {
+  private async verify(username: string, password: string, client: string | undefined): Promise<{ me: Me; passwordHash: string } | undefined> {
+    this.throttle.attempt(username);
     const found = await this.passwordHashOf(username);
     const valid = await Bun.password.verify(password, found?.passwordHash ?? (await this.dummy()));
-    return found && valid ? found : undefined;
+    if (found && valid) {
+      this.throttle.forget(username);
+      return found;
+    }
+    // quoted: the username is the caller's, and must not be able to forge a line of its own
+    this.log.warn(`Failed login for ${JSON.stringify(username)} from ${client ?? "an unknown address"}`);
   }
 
   private async passwordHashOf(username: string): Promise<{ me: Me; passwordHash: string } | undefined> {
@@ -131,6 +147,8 @@ export namespace AuthService {
   export type Credentials = {
     token?: string | null;
     authorization?: string | null;
+    // for the log only
+    client?: string;
   };
 
   export const COOKIE = "notas_session";
@@ -187,4 +205,52 @@ namespace VerifiedHeaders {
   export type Entry = { username: string; passwordHash: string };
   export const TTL = Temporal.Duration.from({ minutes: 10 });
   export const MAX = 1000;
+}
+
+/**
+ * Per username, so changing addresses gains an attacker nothing; the price is that they can hold up one user's logins.
+ * An attempt counts before its bcrypt runs, or a burst of parallel guesses would all get past an unblocked username.
+ * Only a bcrypt verify adds an entry, ~139/s on 10 cores, so an hour's retention bounds the map near 500k entries: 26 MB
+ * of numbers, where instants would have taken ~280 MB.
+ */
+class LoginThrottle {
+  // ordered by last attempt, so pruning stops at the first recent one
+  private readonly entries = new Map<string, LoginThrottle.Entry>();
+
+  public attempt(username: string): void {
+    const now = Date.now();
+    this.prune(now);
+    const entry = this.entries.get(username);
+    if (entry && entry.blockedUntil > now) {
+      throw AuthError.too_many_attempts({ retryAfter: Math.ceil((entry.blockedUntil - now) / 1000) });
+    }
+    const attempts = (entry?.attempts ?? 0) + 1;
+    this.entries.delete(username);
+    this.entries.set(username, { attempts, last: now, blockedUntil: now + LoginThrottle.delay(attempts) });
+  }
+
+  public forget(username: string): void {
+    this.entries.delete(username);
+  }
+
+  private prune(now: number): void {
+    for (const [username, { last }] of this.entries) {
+      if (now - last < LoginThrottle.RETAIN_MS) {
+        return;
+      }
+      this.entries.delete(username);
+    }
+  }
+}
+
+namespace LoginThrottle {
+  export type Entry = { attempts: number; last: number; blockedUntil: number };
+  export const FREE = 5;
+  export const MAX_DELAY_MS = 15 * 60 * 1000;
+  export const RETAIN_MS = 60 * 60 * 1000;
+
+  // what the next attempt waits: nothing for the first few, then 1 s, doubling up to 15 minutes
+  export function delay(attempts: number): number {
+    return attempts < FREE ? 0 : Math.min(1000 * 2 ** (attempts - FREE), MAX_DELAY_MS);
+  }
 }

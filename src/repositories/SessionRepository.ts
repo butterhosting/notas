@@ -3,7 +3,7 @@ import { $session } from "@/drizzle/schema";
 import { Sqlite } from "@/drizzle/sqlite";
 import { Session } from "@/models/internal/Session";
 import { Temporal } from "@js-temporal/polyfill";
-import { eq, lt } from "drizzle-orm";
+import { eq, isNull, lt } from "drizzle-orm";
 
 export class SessionRepository {
   public constructor(private readonly sqlite: Sqlite) {}
@@ -28,6 +28,10 @@ export class SessionRepository {
 
   public async deleteForUser(user: string): Promise<void> {
     await this.sqlite.delete($session).where(eq($session.user, user));
+  }
+
+  public async deleteAdmin(): Promise<void> {
+    await this.sqlite.delete($session).where(isNull($session.user));
   }
 
   public async deleteExpired(now: Temporal.Instant): Promise<void> {

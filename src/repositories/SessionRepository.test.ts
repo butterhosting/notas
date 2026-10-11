@@ -37,4 +37,18 @@ describe(SessionRepository.name, () => {
     expect(await repository.find("user")).toBeUndefined();
     expect(await repository.find("admin")).toBeDefined();
   });
+
+  it("should forget the admin's sessions, and only those", async () => {
+    // given
+    const { user } = await context.persistWorkspace();
+    const now = Temporal.Now.instant();
+    await repository.create({ id: "admin", expires: now.add({ hours: 1 }), created: now });
+    await repository.create({ id: "user", user: user.id, expires: now.add({ hours: 1 }), created: now });
+
+    // when
+    await repository.deleteAdmin();
+    // then
+    expect(await repository.find("admin")).toBeUndefined();
+    expect(await repository.find("user")).toBeDefined();
+  });
 });

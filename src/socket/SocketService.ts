@@ -46,6 +46,9 @@ export class SocketService {
           });
         case Event.Type.workspaces_changed:
           return this.send(event.data.users, { type: ServerMessage.Type.workspaces_changed });
+        case Event.Type.sessions_revoked:
+          // the client reconnects, and gets in again only with credentials that still hold
+          return this.sockets.filter((socket) => socket.data.user === event.data.user).forEach((socket) => socket.close());
       }
     });
   }

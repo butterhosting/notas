@@ -5,6 +5,7 @@ import { EventBus } from "./events/EventBus";
 import { Initialize } from "./Initialize";
 import { LoggingMiddleware } from "./middleware/logging/LoggingMiddleware";
 import { Middleware } from "./middleware/Middleware";
+import { SameOriginMiddleware } from "./middleware/origin/SameOriginMiddleware";
 import { MediaRepository } from "./repositories/MediaRepository";
 import { PageRepository } from "./repositories/PageRepository";
 import { SessionRepository } from "./repositories/SessionRepository";
@@ -47,7 +48,8 @@ export class ServerRegistry {
     const { restrictedService } = this.register({ RestrictedService }, [userService, workspaceService, pageService, mediaService, sessionRepository]);
 
     const { loggingMiddleware } = this.register({ LoggingMiddleware }, []);
-    const { middleware } = this.register({ Middleware }, [loggingMiddleware]);
+    const { sameOriginMiddleware } = this.register({ SameOriginMiddleware }, []);
+    const { middleware } = this.register({ Middleware }, [loggingMiddleware, sameOriginMiddleware]);
 
     this.register({ Server }, [env, authService, userService, workspaceService, pageService, mediaService, restrictedService, socketService, middleware]);
   }

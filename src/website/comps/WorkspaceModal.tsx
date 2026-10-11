@@ -1,5 +1,5 @@
+import { WorkspaceError } from "@/errors/WorkspaceError";
 import { Workspace } from "@/models/Workspace";
-import { ProblemDetails } from "@/models/internal/ProblemDetails";
 import { useState } from "react";
 import { WorkspaceClient } from "../clients/WorkspaceClient";
 import { useRegistry } from "../hooks/useRegistry";
@@ -25,7 +25,7 @@ export function WorkspaceModal({ existing, close, done }: Props) {
       setBusy(true);
       done(existing ? await workspaceClient.rename(existing.id, name) : await workspaceClient.create(name));
     } catch (e) {
-      setError(ProblemDetails.isInstance(e) && e.problem === "WorkspaceError::name_taken" ? "You already have a workspace with that name." : "Something went wrong.");
+      setError(WorkspaceError.name_taken.matches(e) ? "You already have a workspace with that name." : "Something went wrong.");
     } finally {
       setBusy(false);
     }

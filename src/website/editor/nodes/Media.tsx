@@ -109,6 +109,8 @@ function MediaView(props: NodeViewProps) {
 
 const VISUAL = "mx-auto block max-h-[80vh] max-w-full rounded";
 const FRAME = "aspect-video w-full rounded border-0 bg-c-block";
+// anything a writer pastes gets framed; this keeps it to its own box: no taking over the tab, no dialogs, no downloads
+const SANDBOX = "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation";
 
 function MediaContent({ kind, src, attrs }: { kind: Media.Kind; src: string; attrs: Record<string, any> }) {
   switch (kind) {
@@ -116,7 +118,7 @@ function MediaContent({ kind, src, attrs }: { kind: Media.Kind; src: string; att
       return <img src={src} alt={attrs.alt ?? ""} draggable={false} className={VISUAL} />;
     case "video": {
       const embed = EmbedLink.videoUrl(src);
-      return embed ? <iframe src={embed} allowFullScreen className={FRAME} /> : <video src={src} controls preload="metadata" className={VISUAL} />;
+      return embed ? <iframe src={embed} sandbox={SANDBOX} allowFullScreen className={FRAME} /> : <video src={src} controls preload="metadata" className={VISUAL} />;
     }
     case "audio":
       return <audio src={src} controls preload="metadata" className="w-full" />;
@@ -129,7 +131,7 @@ function MediaContent({ kind, src, attrs }: { kind: Media.Kind; src: string; att
         </a>
       );
     case "embed":
-      return <iframe src={EmbedLink.url(src)} allowFullScreen className={FRAME} />;
+      return <iframe src={EmbedLink.url(src)} sandbox={SANDBOX} allowFullScreen className={FRAME} />;
   }
 }
 
