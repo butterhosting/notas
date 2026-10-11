@@ -51,7 +51,6 @@ export function UserModal({ existing, close, done }: Props) {
             onChange={(e) => setUsername(e.target.value)}
             className="rounded-md border border-c-border bg-c-bg px-3 py-2 outline-none placeholder:text-c-placeholder focus:border-c-accent"
           />
-          <span className="text-xs text-c-dark-half">Lower case letters, digits, and . _ or - in between.</span>
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-c-dark-half">{existing ? "New password" : "Password"}</span>
@@ -63,7 +62,6 @@ export function UserModal({ existing, close, done }: Props) {
             placeholder={existing ? "Leave empty to keep it" : ""}
             className="rounded-md border border-c-border bg-c-bg px-3 py-2 outline-none placeholder:text-c-placeholder focus:border-c-accent"
           />
-          <span className="text-xs text-c-dark-half">At least 8 characters.{existing && " Changing it logs them out everywhere."}</span>
         </label>
         {error && <p className="text-sm text-c-error">{error}</p>}
         <div className="flex justify-end gap-3">
@@ -84,9 +82,13 @@ export namespace UserModal {
     if (!ProblemDetails.isInstance(e)) return "Something went wrong.";
     if (UserError.username_taken.matches(e)) return "That username is taken.";
     if (ServerError.invalid_request_body.matches(e)) {
-      const fields: string[] = e.details?.issues?.map((issue: { field: string }) => issue.field) ?? [];
-      if (fields.includes("username")) return "That username isn't allowed (and admin is reserved).";
-      if (fields.includes("password")) return "The password needs at least 8 characters.";
+      const issues: { field: string; description: string }[] = e.details?.issues ?? [];
+      const username = issues.find(({ field }) => field === "username");
+      const password = issues.find(({ field }) => field === "password");
+      if (username?.description === "custom") return "The username admin is reserved.";
+      if (username) return "A username takes up to 32 lower case letters, digits, and . _ or - in between.";
+      if (password?.description === "too_big") return "A password can have at most 200 characters.";
+      if (password) return "A password needs at least 8 characters.";
     }
     return e.problem;
   }

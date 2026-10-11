@@ -30,6 +30,7 @@ export class ClientRegistry {
       NOTAS_COMMIT: env.NOTAS_COMMIT,
       NOTAS_TIMEZONE: env.NOTAS_TIMEZONE,
       NOTAS_UPLOAD_LIMIT: env.NOTAS_UPLOAD_LIMIT,
+      INTERACTIVE_DEMO: env.INTERACTIVE_DEMO,
     };
     const longestKey = Object.keys(envCopy)
       .map((k) => k.length)

@@ -129,7 +129,7 @@ function PageCover({ cover, readOnly, onChange }: { cover: Page.Cover; readOnly?
     const startFocus = repositioning;
     const height = ref.current!.offsetHeight;
     const onMove = (move: PointerEvent) => {
-      // dragging the image down reveals more of its top, as in Notion
+      // dragging the image down reveals more of its top
       setRepositioning(Math.min(100, Math.max(0, startFocus - ((move.clientY - startY) / height) * 100)));
     };
     const onUp = () => {

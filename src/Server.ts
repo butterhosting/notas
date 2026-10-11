@@ -10,6 +10,7 @@ import path from "path";
 import { Yexception } from "yexception";
 import { Logger } from "./Logger";
 import { Middleware } from "./middleware/Middleware";
+import { Demo } from "./models/copy/Demo";
 import { Me } from "./models/Me";
 import { Media } from "./models/Media";
 import { Member } from "./models/Member";
@@ -301,6 +302,7 @@ export class Server {
         `  \x1b[1mLogging\x1b[0m   ${this.env.NOTAS_LOGGING}`,
         `  \x1b[1mTimezone\x1b[0m  ${this.env.NOTAS_TIMEZONE}`,
         "",
+        ...(this.env.INTERACTIVE_DEMO ? [`  \x1b[1m${Demo.description}\x1b[0m`, ""] : []),
       ].join("\n"),
     );
   }

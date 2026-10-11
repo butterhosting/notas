@@ -57,7 +57,7 @@ export function homePage() {
   if (!current) {
     return (
       <Frame>
-        <Empty icon="🗂️" title="No workspaces" text="Every page lives in a workspace. Create one to get started.">
+        <Empty icon="🗂️" title="No workspaces">
           <Button onClick={createWorkspace}>New workspace</Button>
         </Empty>
       </Frame>
@@ -80,7 +80,7 @@ export function homePage() {
   return (
     <Frame>
       {Workspace.canWrite(current.role) ? (
-        <Empty icon="📝" title="Nothing here yet" text="Notas keeps your pages as markdown, with covers, icons, media and more.">
+        <Empty icon="📝" title="Nothing here yet">
           <Button onClick={createPage}>New page</Button>
         </Empty>
       ) : (
@@ -90,12 +90,12 @@ export function homePage() {
   );
 }
 
-function Empty({ icon, title, text, children }: { icon: string; title: string; text: string; children?: React.ReactNode }) {
+function Empty({ icon, title, text, children }: { icon: string; title: string; text?: string; children?: React.ReactNode }) {
   return (
     <div className="mt-40 flex flex-col items-center gap-4 text-center">
       <div className="text-5xl">{icon}</div>
       <h1 className="text-2xl font-semibold">{title}</h1>
-      <p className="max-w-md text-c-dark-half">{text}</p>
+      {text && <p className="max-w-md text-c-dark-half">{text}</p>}
       {children}
     </div>
   );

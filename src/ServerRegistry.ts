@@ -45,7 +45,7 @@ export class ServerRegistry {
     const { pageService } = this.register({ PageService }, [pageRepository, workspaceService, eventBus]);
     const { mediaService } = this.register({ MediaService }, [mediaRepository, workspaceService]);
     const { socketService } = this.register({ SocketService }, [eventBus, workspaceService]);
-    const { restrictedService } = this.register({ RestrictedService }, [userService, workspaceService, pageService, mediaService, sessionRepository]);
+    const { restrictedService } = this.register({ RestrictedService }, [env, userService, workspaceService, pageService, mediaService, sessionRepository]);
 
     const { loggingMiddleware } = this.register({ LoggingMiddleware }, []);
     const { sameOriginMiddleware } = this.register({ SameOriginMiddleware }, []);

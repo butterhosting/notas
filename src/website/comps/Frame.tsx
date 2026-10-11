@@ -8,7 +8,6 @@ import { AuthClient } from "../clients/AuthClient";
 import { DialogClient } from "../clients/DialogClient";
 import { PageClient } from "../clients/PageClient";
 import { PageIndexClient } from "../clients/PageIndexClient";
-import { RestrictedClient } from "../clients/RestrictedClient";
 import { ThemeClient } from "../clients/ThemeClient";
 import { WorkspaceIndexClient } from "../clients/WorkspaceIndexClient";
 import { usePageIndex } from "../hooks/usePageIndex";
@@ -16,23 +15,27 @@ import { useRegistry } from "../hooks/useRegistry";
 import { useWorkspaces } from "../hooks/useWorkspaces";
 import { Route } from "../Route";
 import { Icon } from "./Icon";
+import { DemoBanner } from "./DemoBanner";
 import { Lockup } from "./Lockup";
 import { Popover } from "./Popover";
-import { Spinner } from "./Spinner";
+import { RestrictedControls } from "./RestrictedControls";
 
 type Props = ComponentProps<"main">;
 export function Frame({ className, children, ...props }: Props) {
   return (
-    <div className="flex h-screen">
-      <Internal.Sidebar />
-      <main {...props} className={clsx("relative flex-1 overflow-y-auto", className)}>
-        <div className="flex min-h-full flex-col">
-          <div className="flex-1">{children}</div>
-          <footer className="flex justify-center pt-24 pb-10">
-            <Lockup.Small />
-          </footer>
-        </div>
-      </main>
+    <div className="flex h-screen flex-col">
+      <DemoBanner />
+      <div className="flex min-h-0 flex-1">
+        <Internal.Sidebar />
+        <main {...props} className={clsx("relative flex-1 overflow-y-auto", className)}>
+          <div className="flex min-h-full flex-col">
+            <div className="flex-1">{children}</div>
+            <footer className="flex justify-center pt-24 pb-10">
+              <Lockup.Small />
+            </footer>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
@@ -517,31 +520,10 @@ namespace Internal {
 
   function Footer() {
     const { NOTAS_STAGE } = useRegistry("env");
-    const restrictedClient = useRegistry(RestrictedClient);
-    const [busy, setBusy] = useState(false);
-    const run = (action: () => Promise<void>) => {
-      setBusy(true);
-      action().then(() => location.assign(Route.home()));
-    };
     return (
       <footer className="flex flex-col gap-1.5 border-t border-c-hover px-3 py-2 text-xs text-c-dark-half">
         <ThemeSwitch />
-        {NOTAS_STAGE === "dev" && (
-          <div className="flex h-6 items-center justify-center gap-1">
-            {busy ? (
-              <Spinner className="size-3.5" />
-            ) : (
-              <>
-                <button onClick={() => run(() => restrictedClient.seed())} className="h-full flex-1 rounded hover:bg-c-hover">
-                  Seed
-                </button>
-                <button onClick={() => run(() => restrictedClient.purge())} className="h-full flex-1 rounded hover:bg-c-hover">
-                  Purge
-                </button>
-              </>
-            )}
-          </div>
-        )}
+        {NOTAS_STAGE === "dev" && <RestrictedControls />}
       </footer>
     );
   }

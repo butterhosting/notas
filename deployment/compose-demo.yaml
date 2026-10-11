@@ -1,0 +1,8 @@
+# The README's one-liner, as a stack: no volume and no admin password, only the flag
+services:
+  notas:
+    image: butterhosting/notas:latest
+    ports:
+      - "3000:3000"
+    environment:
+      INTERACTIVE_DEMO: "true"

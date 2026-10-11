@@ -1,3 +1,6 @@
+import { Env } from "@/Env";
+import { Initialize } from "@/Initialize";
+import { Logger } from "@/Logger";
 import { SessionRepository } from "@/repositories/SessionRepository";
 import { join } from "path";
 import { MediaService } from "./MediaService";
@@ -6,7 +9,10 @@ import { UserService } from "./UserService";
 import { WorkspaceService } from "./WorkspaceService";
 
 export class RestrictedService {
+  private readonly log = new Logger(__filename);
+
   public constructor(
+    private readonly env: Env.Private,
     private readonly userService: UserService,
     private readonly workspaceService: WorkspaceService,
     private readonly pageService: PageService,
@@ -21,6 +27,15 @@ export class RestrictedService {
     }
     await this.sessionRepository.deleteAll();
     await this.mediaService.purge();
+  }
+
+  /** Before the server listens, so no visitor arrives ahead of the seed. */
+  @Initialize
+  public async seedDemo(): Promise<void> {
+    if (this.env.INTERACTIVE_DEMO) {
+      await this.seed();
+      this.log.info("Seeded the demo");
+    }
   }
 
   public async seed(): Promise<void> {

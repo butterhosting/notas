@@ -23,6 +23,10 @@ export namespace ZodParser {
     }
   }
 
+  export function boolean() {
+    return z.enum(["true", "false"], { error: "invalid_boolean" }).transform((value) => value === "true");
+  }
+
   export function forType<T>() {
     return {
       ensureSchemaMatchesType<U extends z.ZodType<T>>(schemaFn: () => U): ParserFactory<T, z.output<U>> {

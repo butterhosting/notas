@@ -70,6 +70,15 @@ describe(AuthService.name, () => {
       expect(context.sessionRepositoryMock.create).not.toHaveBeenCalled();
     });
 
+    it("should have no admin to log in as, where the demo runs without one", async () => {
+      // given
+      service = new AuthService({ ...context.env, NOTAS_ADMIN_PASSWORD: undefined }, context.sessionRepositoryMock.cast(), context.userRepositoryMock.cast());
+      // then
+      await expect(service.login({ username: "admin", password: TestEnvironment.ADMIN_PASSWORD })).rejects.toEqual(
+        expect.objectContaining({ problem: "AuthError::invalid_credentials" }),
+      );
+    });
+
     it("should log a failed login with the username quoted, so it can't forge a line of its own", async () => {
       // when
       await service.login({ username: "kim\nforged", password: "wrong" }, "10.0.0.7").catch(() => {});

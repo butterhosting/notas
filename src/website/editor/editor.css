@@ -3,7 +3,7 @@
         @apply text-base leading-[1.5] outline-none;
         padding-bottom: 2rem;
 
-        /* block spacing, measured off Notion; all rules share a specificity, so later wins */
+        /* block spacing; all rules share a specificity, so later wins */
         :is(&, .callout-content, [data-type="detailsContent"], [data-type="column"], [data-type="tab"]) {
             & > * + * {
                 margin-top: 1rem;
@@ -144,7 +144,7 @@
         }
 
         /* hint only while typing or hovering, so empty spacer lines stay blank; empty headings and toggles always show
-           theirs, or they'd be invisible; table cells never (too narrow, as in Notion) */
+           theirs, or they'd be invisible; table cells never (too narrow) */
         .is-empty::before {
             @apply pointer-events-none float-left h-0 text-c-placeholder content-none;
         }

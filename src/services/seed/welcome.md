@@ -1,4 +1,4 @@
-Notas is a small, self-hosted Notion. Every page is **markdown** underneath, so nothing you write here is locked in.
+Notas is a small, self-hosted knowledge space. Every page is **markdown** underneath, so nothing you write here is locked in.
 
 :::callout{icon="💡"}
 Type `/` anywhere to insert a block, or drag the `⋮⋮` handle next to a block to move it around.

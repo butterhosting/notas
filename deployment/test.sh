@@ -149,6 +149,31 @@ verify_login() {
     return $result
 }
 
+assert_container() {
+    description="$1"
+    shift
+    if docker compose -p "$active_project" -f "$active_compose" exec -T notas sh -c "$*" >/dev/null 2>&1; then
+        printf "    OK    %s\n" "$description"
+        return 0
+    fi
+    printf "    FAIL  %s\n" "$description"
+    return 1
+}
+
+# the flag alone: the seeded pages are there to look at, held in memory, with no admin and no restricted routes
+verify_demo() {
+    kim="kim:possible"
+    assert_body '"INTERACTIVE_DEMO":true' /api/env \
+    && assert_body '"name":"Personal Workspace"' /api/workspaces -u "$kim" \
+    && assert_body '"name":"Recipes"' /api/workspaces -u "$kim" \
+    && assert_status "401" /api/users -u admin:admin \
+    && assert_status "404" /api/restricted/seed -X POST \
+    && workspace=$(curl -s -u "$kim" "$BASE_URL/api/workspaces" | grep -o '"id":"[^"]*"' | head -n 1 | cut -d '"' -f 4) \
+    && assert_status "200" "/api/workspaces/$workspace/media?filename=demo.txt" -X POST -H "content-type: text/plain" --data-binary "demo" -u "$kim" \
+    && assert_container "uploads land in /opt/notas/demo, and nothing in /opt/notas/data" \
+        'ls /opt/notas/demo/media/*/*/demo.txt && [ ! -e /opt/notas/data ]'
+}
+
 verify_admin_password_required() {
     printf "\n  TEST  admin-password-required\n"
     output=$(docker run --rm butterhosting/notas:latest 2>&1 || true)
@@ -165,6 +190,7 @@ cd "$ROOT"
 
 build_image "default"
 run_scenario "login" "$SCRIPT_DIR/compose.yaml" verify_login
+run_scenario "interactive-demo" "$SCRIPT_DIR/compose-demo.yaml" verify_demo
 verify_admin_password_required
 
 printf "\n  %d passed, %d failed\n\n" "$passed" "$failed"

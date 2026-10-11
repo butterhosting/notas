@@ -62,7 +62,7 @@ export function adminPage() {
         </div>
       </header>
       <div className="overflow-hidden rounded-lg border border-c-border">
-        {users?.length === 0 && <div className="px-4 py-10 text-center text-sm text-c-dark-half">No users yet: create the first one.</div>}
+        {users?.length === 0 && <div className="px-4 py-10 text-center text-sm text-c-dark-half">No users yet.</div>}
         {users?.map((user) => (
           <div key={user.id} data-testid="user-row" className="flex items-center gap-4 border-b border-c-border px-4 py-3 last:border-b-0">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-c-hover font-semibold uppercase">{user.username[0]}</div>

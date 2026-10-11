@@ -27,7 +27,14 @@ describe("Env", () => {
     // given
     const env = Env.initialize("UTC", REQUIRED);
     // then
-    expect(Object.keys(Env.onlyPublic(env)).sort()).toEqual(["NOTAS_COMMIT", "NOTAS_STAGE", "NOTAS_TIMEZONE", "NOTAS_UPLOAD_LIMIT", "NOTAS_VERSION"]);
+    expect(Object.keys(Env.onlyPublic(env)).sort()).toEqual([
+      "INTERACTIVE_DEMO",
+      "NOTAS_COMMIT",
+      "NOTAS_STAGE",
+      "NOTAS_TIMEZONE",
+      "NOTAS_UPLOAD_LIMIT",
+      "NOTAS_VERSION",
+    ]);
   });
 
   it("should refuse an admin password that isn't a bcrypt hash, like one an env file mangled", () => {
@@ -35,5 +42,23 @@ describe("Env", () => {
     const mangled = "/0pDC93VzwHNeHLgKgPWEZI2IMwRBS6foXuqQNncqPQ.";
     // then
     expect(() => Env.initialize("UTC", { ...REQUIRED, NOTAS_ADMIN_PASSWORD: mangled })).toThrow("in an .env file, escape every $");
+  });
+
+  it("should require an admin password, also where an env file leaves it empty", () => {
+    // then
+    for (const NOTAS_ADMIN_PASSWORD of [undefined, ""]) {
+      expect(() => Env.initialize("UTC", { ...REQUIRED, NOTAS_ADMIN_PASSWORD })).toThrow("NOTAS_ADMIN_PASSWORD");
+    }
+  });
+
+  it("should run the demo without an admin, on a database in memory, and keep its uploads out of the data folder", () => {
+    // when
+    const env = Env.initialize("UTC", { ...REQUIRED, NOTAS_ADMIN_PASSWORD: "", INTERACTIVE_DEMO: "true" });
+    // then
+    expect(env.INTERACTIVE_DEMO).toBeTrue();
+    expect(env.NOTAS_ADMIN_PASSWORD).toBeUndefined();
+    expect(env.NOTAS_DATABASE).toEqual(":memory:");
+    expect(env.NOTAS_MEDIA).toEqual("/opt/notas/demo/media");
+    expect(Env.initialize("UTC", REQUIRED)).toEqual(expect.objectContaining({ INTERACTIVE_DEMO: false, NOTAS_MEDIA: "/opt/notas/data/media" }));
   });
 });

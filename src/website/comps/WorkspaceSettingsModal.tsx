@@ -10,6 +10,7 @@ import { WorkspaceClient } from "../clients/WorkspaceClient";
 import { WorkspaceIndexClient } from "../clients/WorkspaceIndexClient";
 import { useRegistry } from "../hooks/useRegistry";
 import { Button } from "./Button";
+import { Icon } from "./Icon";
 import { Modal } from "./Modal";
 
 type Props = {
@@ -124,15 +125,7 @@ function OwnerSettings({ workspace, done }: { workspace: Workspace; done: Props[
         {members?.map((member) => (
           <div key={member.user.id} data-testid="member" className="flex items-center gap-2">
             <span className="flex-1 truncate px-3">{member.user.username}</span>
-            <select
-              aria-label={`role of ${member.user.username}`}
-              value={member.role}
-              onChange={(e) => changeRole(member, e.target.value as Member.Role)}
-              className={Row.SELECT}
-            >
-              <option value="write">Can edit</option>
-              <option value="read">Can read</option>
-            </select>
+            <RoleSelect aria-label={`role of ${member.user.username}`} value={member.role} onChange={(role) => changeRole(member, role)} />
             <Button variant="ghost" theme="error" onClick={() => remove(member)} className={Row.ACTION}>
               Remove
             </Button>
@@ -146,18 +139,14 @@ function OwnerSettings({ workspace, done }: { workspace: Workspace; done: Props[
             placeholder="Username"
             className={clsx(Row.INPUT, "flex-1")}
           />
-          <select aria-label="role" value={role} onChange={(e) => setRole(e.target.value as Member.Role)} className={Row.SELECT}>
-            <option value="write">Can edit</option>
-            <option value="read">Can read</option>
-          </select>
+          <RoleSelect aria-label="role" value={role} onChange={setRole} />
           <Button type="submit" disabled={!username.trim()} className={Row.ACTION}>
             Share
           </Button>
         </form>
       </section>
       {error && <p className="text-c-error">{error}</p>}
-      <section className="flex items-center justify-between gap-4 border-t border-c-border pt-4">
-        <span className="text-c-dark-half">Deletes the workspace with everything in it.</span>
+      <section className="flex justify-end border-t border-c-border pt-4">
         <Button theme="error" variant="ghost" onClick={deleteWorkspace}>
           Delete workspace
         </Button>
@@ -197,8 +186,24 @@ function MemberSettings({ workspace, done }: { workspace: Workspace; done: Props
   );
 }
 
+// the native caret ignores padding, and sits closer to the edge than the text does to the other
+function RoleSelect({ onChange, ...props }: { "aria-label": string; value: Member.Role; onChange: (role: Member.Role) => void }) {
+  return (
+    <span className="relative shrink-0">
+      <select
+        {...props}
+        onChange={(e) => onChange(e.target.value as Member.Role)}
+        className="h-9 w-28 appearance-none rounded-lg border border-c-border bg-c-bg pr-8 pl-3"
+      >
+        <option value="write">Can edit</option>
+        <option value="read">Can read</option>
+      </select>
+      <Icon.Chevron className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 rotate-90 text-c-dark-half" />
+    </span>
+  );
+}
+
 namespace Row {
   export const INPUT = "h-9 min-w-0 rounded-lg border border-c-border bg-c-bg px-3 outline-none focus:border-c-accent";
-  export const SELECT = "h-9 w-28 shrink-0 rounded-lg border border-c-border bg-c-bg px-2";
   export const ACTION = "h-9 w-24 shrink-0 px-0";
 }

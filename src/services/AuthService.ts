@@ -131,8 +131,10 @@ export class AuthService {
   }
 
   private async passwordHashOf(username: string): Promise<{ me: Me; passwordHash: string } | undefined> {
+    // the demo runs without an admin
     if (username === User.ADMIN) {
-      return { me: { object: "me", kind: "admin" }, passwordHash: this.env.NOTAS_ADMIN_PASSWORD };
+      const passwordHash = this.env.NOTAS_ADMIN_PASSWORD;
+      return passwordHash ? { me: { object: "me", kind: "admin" }, passwordHash } : undefined;
     }
     const found = await this.userRepository.findWithPasswordHash(username);
     return found && { me: { object: "me", kind: "user", user: found.user }, passwordHash: found.passwordHash };
