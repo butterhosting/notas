@@ -157,4 +157,64 @@ describe("Markdown", () => {
     // then
     expect(roundtrip(once)).toEqual(once);
   });
+
+  it("should keep a paragraph that starts like another block a paragraph, on any of its lines", () => {
+    // given
+    const texts = ["- dash", "+ plus", "1. one", "2) two", "# hash", "> quote", "---", "===", '::toc', ':::callout{icon="💡"}'];
+
+    for (const text of texts) {
+      // given
+      const doc = {
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text }, { type: "hardBreak" }, { type: "text", text }] }],
+      };
+
+      // when
+      const markdown = manager.serialize(doc);
+      // then
+      expect(parse(markdown)).toEqual(doc);
+      expect(roundtrip(markdown)).toEqual(markdown);
+    }
+  });
+
+  it("should keep media inside the list item it belongs to", () => {
+    // given
+    const blocks = [
+      { type: "embed", attrs: { src: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } },
+      { type: "video", attrs: { src: "/media/0199/clip.mp4" } },
+      { type: "image", attrs: { src: "/media/0199/cat.png", title: null, alt: "" } },
+    ];
+    const lists = [
+      { list: "bulletList", item: "listItem" },
+      { list: "orderedList", item: "listItem" },
+      { list: "taskList", item: "taskItem" },
+    ];
+
+    for (const { list, item } of lists) {
+      for (const block of blocks) {
+        // given
+        const doc = {
+          type: "doc",
+          content: [
+            {
+              type: list,
+              content: [
+                {
+                  type: item,
+                  ...(item === "taskItem" ? { attrs: { checked: false } } : {}),
+                  content: [{ type: "paragraph", content: [{ type: "text", text: "Item" }] }, block],
+                },
+              ],
+            },
+          ],
+        };
+
+        // when
+        const markdown = manager.serialize(doc);
+        // then
+        expect(parse(markdown)).toEqual(doc);
+        expect(roundtrip(markdown)).toEqual(markdown);
+      }
+    }
+  });
 });
