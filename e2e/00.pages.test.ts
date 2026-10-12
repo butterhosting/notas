@@ -86,3 +86,29 @@ test("the theme follows the system until one is picked, and the pick sticks", as
   await page.emulateMedia({ colorScheme: "dark" });
   await expect.poll(theme).toEqual("dark");
 });
+
+test("a page lists its subpages at the bottom, and follows changes to them", async ({ page }) => {
+  // given
+  const { workspace } = await AppBoundary.newUser(page);
+  const create = async (data: object) => (await (await page.request.post(`/api/workspaces/${workspace}/pages`, { data })).json()).id as string;
+  const parent = await create({ title: "Parent" });
+  await create({ parent, title: "First child", icon: "🥇" });
+  await create({ parent, title: "Second child" });
+  const subpages = page.getByRole("navigation", { name: "subpages" }).getByRole("link");
+
+  // when
+  await page.goto(`p/${parent}`);
+  // then
+  await expect(subpages).toHaveText(["🥇First child", "Second child"]);
+
+  // when
+  await create({ parent, title: "Third child" });
+  // then
+  await expect(subpages).toHaveText(["🥇First child", "Second child", "Third child"]);
+
+  // when
+  await subpages.filter({ hasText: "Second child" }).click();
+  // then
+  await expect(page).toHaveTitle("Second child | Notas");
+  await expect(page.getByRole("navigation", { name: "subpages" })).toHaveCount(0);
+});

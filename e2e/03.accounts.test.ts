@@ -176,3 +176,24 @@ test("users rename themselves, change their password, and delete their own accou
   await expect(page.getByRole("heading", { name: "Log in to Notas" })).toBeVisible();
   expect((await page.request.post("/api/session", { data: { username: "kimberly", password: "a new password" } })).status()).toEqual(400);
 });
+
+test("the switcher lists workspaces by name, and a new browser still opens the oldest", async ({ page }) => {
+  // given
+  await AppBoundary.newUser(page, "kim", "kim-password");
+  for (const name of ["Zebra", "apple", "Mango 10", "Mango 9"]) {
+    await page.request.post("/api/workspaces", { data: { name }, failOnStatusCode: true });
+  }
+
+  // when
+  await page.goto("");
+  // then
+  await expect(page.getByText("Nothing here yet")).toBeVisible();
+  await page.getByRole("button", { name: "workspaces" }).click();
+  await expect(page.getByRole("menuitem").filter({ hasNotText: /Workspace settings|New workspace|My account|Log out/ })).toHaveText([
+    "aapple",
+    "MMango 9",
+    "MMango 10",
+    "PPersonal Workspace✓",
+    "ZZebra",
+  ]);
+});

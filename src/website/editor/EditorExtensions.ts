@@ -18,6 +18,9 @@ const FixedStarterKit = StarterKit.extend({
       switch (extension.name) {
         case "paragraph":
           return (extension as Node).extend({
+            parseMarkdown(token, h) {
+              return this.parent!(Markdown.withoutLeadingSpace(token), h);
+            },
             renderMarkdown(node, h, ctx) {
               return Markdown.escapeBlockStarts(this.parent!(node, h, ctx));
             },

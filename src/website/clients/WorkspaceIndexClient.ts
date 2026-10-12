@@ -29,6 +29,7 @@ export class WorkspaceIndexClient {
   public async load() {
     const workspaces = await this.workspaceClient.list();
     const keep = [this.state.current?.id, localStorage.getItem(WorkspaceIndexClient.LAST_OPENED)];
+    // with nothing to keep, the oldest: the one every account starts with, not whichever sorts first
     const current = keep.map((id) => workspaces.find((workspace) => workspace.id === id)).find(Boolean) ?? workspaces[0];
     this.set({ workspaces, current });
   }
@@ -47,7 +48,7 @@ export class WorkspaceIndexClient {
   }
 
   private set(state: WorkspaceIndexClient.State) {
-    this.state = state;
+    this.state = { ...state, workspaces: state.workspaces.toSorted(WorkspaceIndexClient.byName) };
     this.listeners.forEach((listener) => listener());
   }
 }
@@ -56,4 +57,8 @@ export namespace WorkspaceIndexClient {
   export type State = { workspaces: Workspace[]; current?: Workspace };
 
   export const LAST_OPENED = "notas.workspace";
+
+  export function byName(a: Workspace, b: Workspace): number {
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+  }
 }

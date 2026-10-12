@@ -13,11 +13,14 @@ export namespace Directive {
 
   const containers = new Set<string>();
 
+  // up to three, as for any markdown block; a list item's lines can carry a stray one (TipTap dedents `1. ` by two)
+  const INDENT = " {0,3}";
+
   export function leaf(name: string): MarkdownTokenizer {
     return {
       name,
       level: "block",
-      start: (src) => src.search(new RegExp(`^::${name}(?![\\w-])`, "m")),
+      start: (src) => src.search(new RegExp(`^${INDENT}::${name}(?![\\w-])`, "m")),
       tokenize(src): Token | undefined {
         const line = parseLine(src, 2, name);
         if (!line || line.label !== undefined) {
@@ -33,7 +36,7 @@ export namespace Directive {
     return {
       name,
       level: "block",
-      start: (src) => src.search(new RegExp(`^:{3,}${name}(?![\\w-])`, "m")),
+      start: (src) => src.search(new RegExp(`^${INDENT}:{3,}${name}(?![\\w-])`, "m")),
       tokenize(src, _tokens, lexer): Token | undefined {
         const line = parseLine(src, 3, name);
         if (!line || src[line.end - 1] !== "\n") {
@@ -49,7 +52,7 @@ export namespace Directive {
           attributes: line.attributes,
           label: line.label === undefined ? undefined : lexer.inlineTokens(line.label),
           labelText: line.label === undefined ? undefined : unescapeLabel(line.label),
-          tokens: blockTokens(src.slice(line.end, close.start), lexer),
+          tokens: blockTokens(dedent(src.slice(line.end, close.start)), lexer),
         };
       },
     };
@@ -99,9 +102,10 @@ export namespace Directive {
 
   // not a regex: it has to track nested brackets in the label and quotes in the attributes
   function parseLine(src: string, minColons: number, name: string): Line | undefined {
-    let i = 0;
+    let i = src.match(new RegExp(`^${INDENT}`))![0].length;
+    const from = i;
     while (src[i] === ":") i++;
-    const colons = i;
+    const colons = i - from;
     if (colons < minColons || (minColons === 2 && colons !== 2) || !src.startsWith(name, i)) {
       return;
     }
@@ -161,19 +165,27 @@ export namespace Directive {
         if (codeFence && codeFence[0] === code[0] && codeFence.length >= code.length && line.trim() === codeFence) code = undefined;
       } else if (codeFence) {
         code = codeFence;
-      } else if (line.trimEnd() === fence) {
+      } else if (new RegExp(`^${INDENT}${fence}[ \\t]*$`).test(line)) {
         if (depth === 0) return { start, end };
         depth--;
-      } else if (new RegExp(`^${fence}[\\w-]`).test(line)) {
+      } else if (new RegExp(`^${INDENT}${fence}[\\w-]`).test(line)) {
         depth++;
       }
       start = end;
     }
   }
 
-  // marked fills in nested blocks' inline tokens lazily; reading them before it has finds none
+  // the indentation every line shares, up to three spaces, says nothing; left in, it would end up in the text
+  function dedent(src: string): string {
+    const lines = src.split("\n");
+    const shared = Math.min(3, ...lines.filter((line) => line.trim()).map((line) => line.match(/^ */)![0].length));
+    return shared ? lines.map((line) => line.slice(Math.min(shared, line.match(/^ */)![0].length))).join("\n") : src;
+  }
+
+  // marked fills in nested blocks' inline tokens lazily; reading them before it has finds none. Inside a list item it
+  // lexes paragraphs as bare `text`, which a container has to hold as paragraphs all the same.
   function blockTokens(src: string, lexer: MarkdownLexerConfiguration): MarkdownToken[] {
-    const tokens = lexer.blockTokens(src);
+    const tokens = lexer.blockTokens(src).map((token) => (token.type === "text" ? { ...token, type: "paragraph" } : token));
     for (const token of tokens) {
       if (token.text && (!token.tokens || token.tokens.length === 0) && token.type !== "code") {
         token.tokens = lexer.inlineTokens(token.text);

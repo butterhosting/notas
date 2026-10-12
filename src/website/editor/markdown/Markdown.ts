@@ -1,4 +1,4 @@
-import type { JSONContent, MarkdownRendererHelpers } from "@tiptap/core";
+import type { JSONContent, MarkdownRendererHelpers, MarkdownToken } from "@tiptap/core";
 
 // Fixes to how TipTap writes markdown, where what it writes reads back as something else
 export namespace Markdown {
@@ -19,6 +19,19 @@ export namespace Markdown {
   /** A paragraph's text that starts like another block, on any of its lines, keeps reading as text. */
   export function escapeBlockStarts(markdown: string): string {
     return BLOCK_STARTS.reduce((escaped, [pattern, replacement]) => escaped.replace(pattern, replacement), markdown);
+  }
+
+  /**
+   * A paragraph's leading whitespace means nothing, but TipTap's ordered list leaves a space in front of every block
+   * after an item's first (it dedents `1. ` by two), which would keep a lone image from being read as an image block.
+   */
+  export function withoutLeadingSpace(token: MarkdownToken): MarkdownToken {
+    const [first, ...rest] = token.tokens ?? [];
+    if (first?.type !== "text" || !/^\s/.test(first.text ?? "")) {
+      return token;
+    }
+    const text = first.text!.trimStart();
+    return { ...token, tokens: text ? [{ ...first, text, raw: first.raw?.trimStart() }, ...rest] : rest };
   }
 
   /**

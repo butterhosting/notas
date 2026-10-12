@@ -79,16 +79,12 @@ export namespace SlashCommand {
       {
         title: "Page",
         group: "Basic blocks",
-        keywords: ["subpage", "new", "link"],
+        keywords: ["subpage", "new"],
         icon: Icon.Page,
+        // no link left behind: the parent lists its subpages at the bottom by itself
         run: (e, r) => {
           chain(e, r).run();
-          createSubpage().then((id) => {
-            if (id) {
-              insertBlock(e, { type: "pageLink", attrs: { id } });
-              openPage(id);
-            }
-          });
+          createSubpage().then((id) => id && openPage(id));
         },
       },
       { title: "Callout", group: "Basic blocks", keywords: ["note", "info", "tip", "warning"], icon: Icon.Callout, run: (e, r) => chain(e, r).setCallout().run() },

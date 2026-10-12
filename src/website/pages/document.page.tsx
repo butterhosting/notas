@@ -15,6 +15,7 @@ import { SocketClient } from "../clients/SocketClient";
 import { Frame } from "../comps/Frame";
 import { PageHeader } from "../comps/PageHeader";
 import { Spinner } from "../comps/Spinner";
+import { Subpages } from "../comps/Subpages";
 import { Editor } from "../editor/Editor";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { usePageIndex } from "../hooks/usePageIndex";
@@ -279,6 +280,7 @@ function Document({ page, onRestore }: { page: Page; onRestore: () => void }) {
           createSubpage={async () => (await pageClient.create(page.workspace, { parent: page.id })).id}
           openPage={(id) => navigate(Route.page(id))}
         />
+        <Subpages parent={page.id} />
       </div>
       <SaveIndicator state={state} onReload={loadRemote} onKeepMine={keepMine} />
     </article>

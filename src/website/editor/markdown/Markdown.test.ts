@@ -177,13 +177,22 @@ describe("Markdown", () => {
     }
   });
 
-  it("should keep media inside the list item it belongs to", () => {
+  it("should keep media and directives inside the list item they belong to", () => {
     // given
-    const blocks = [
-      { type: "embed", attrs: { src: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } },
-      { type: "video", attrs: { src: "/media/0199/clip.mp4" } },
-      { type: "image", attrs: { src: "/media/0199/cat.png", title: null, alt: "" } },
-    ];
+    const paragraph = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
+    const embed = { type: "embed", attrs: { src: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } };
+    const video = { type: "video", attrs: { src: "/media/0199/clip.mp4" } };
+    const image = { type: "image", attrs: { src: "/media/0199/cat.png", title: null, alt: "" } };
+    const callout = { type: "callout", attrs: { icon: "💡" }, content: [paragraph("Inside."), paragraph("And more.")] };
+    const toggle = {
+      type: "details",
+      attrs: { level: null },
+      content: [
+        { type: "detailsSummary", content: [{ type: "text", text: "Open" }] },
+        { type: "detailsContent", content: [paragraph("Hidden.")] },
+      ],
+    };
+    const sequences = [[embed], [video], [image], [embed, video], [callout], [toggle], [callout, image]];
     const lists = [
       { list: "bulletList", item: "listItem" },
       { list: "orderedList", item: "listItem" },
@@ -191,7 +200,7 @@ describe("Markdown", () => {
     ];
 
     for (const { list, item } of lists) {
-      for (const block of blocks) {
+      for (const blocks of sequences) {
         // given
         const doc = {
           type: "doc",
@@ -202,7 +211,7 @@ describe("Markdown", () => {
                 {
                   type: item,
                   ...(item === "taskItem" ? { attrs: { checked: false } } : {}),
-                  content: [{ type: "paragraph", content: [{ type: "text", text: "Item" }] }, block],
+                  content: [paragraph("Item"), ...blocks],
                 },
               ],
             },
