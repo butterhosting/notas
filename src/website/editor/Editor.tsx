@@ -105,7 +105,7 @@ export function Editor({ workspace, markdown, editable = true, onChange, onReady
 
   return (
     // the padding is the block handle's gutter, which has to count as hovering the editor
-    <div ref={setContainer} className="relative -ml-14 pl-14">
+    <div ref={setContainer} className="relative -ml-14 pl-14 md:-ml-6 md:pl-6">
       <EditorContent editor={editor} />
       {editor && <BlockHandle editor={editor} container={container} />}
       {editor && <FormatMenu editor={editor} />}

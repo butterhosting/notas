@@ -43,8 +43,8 @@ export function loginPage({ onLogin }: { onLogin: (me: Me) => void }) {
     return null;
   }
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-c-sidebar px-4 py-12">
-      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-xl bg-c-surface p-8 shadow-popover">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-10 bg-c-sidebar px-4 py-12 sm:bg-c-bg sm:px-6">
+      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-xl bg-c-surface p-8 shadow-popover sm:my-auto sm:bg-transparent sm:p-0 sm:shadow-none">
         <h1 className="mb-2 text-center text-xl font-semibold">Log in to Notas</h1>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-c-dark-half">Username</span>

@@ -29,7 +29,8 @@ export function FormatMenu({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       editor={editor}
-      options={{ placement: "top", offset: 8 }}
+      // below on touch screens, where the system's own selection menu sits above
+      options={{ placement: matchMedia("(pointer: coarse)").matches ? "bottom" : "top", offset: 8 }}
       shouldShow={({ editor, state, from, to }) =>
         editor.isEditable && isTextSelection(state.selection) && from !== to && !state.selection.$from.parent.type.spec.code
       }

@@ -21,7 +21,7 @@ export function Popover({ anchor, onClose, placement = "bottom-start", className
     }
     let shown = false;
     return autoUpdate(anchor, element, () => {
-      computePosition(anchor, element, { placement, middleware: [offset(6), flip(), shift({ padding: 8 })] }).then(({ x, y }) => {
+      computePosition(anchor, element, { placement, middleware: [offset(6), flip(), shift({ padding: 8, crossAxis: true })] }).then(({ x, y }) => {
         Object.assign(element.style, { left: `${x}px`, top: `${y}px`, visibility: "visible" });
         // an `autoFocus` fires while the panel is still hidden, and a hidden input can't take focus
         if (!shown) {
@@ -53,7 +53,7 @@ export function Popover({ anchor, onClose, placement = "bottom-start", className
       ref={ref}
       // positioned before it is shown, so it never flashes in the corner
       style={{ visibility: "hidden" }}
-      className={clsx("absolute top-0 left-0 z-50 rounded-lg bg-c-surface shadow-popover", className)}
+      className={clsx("absolute top-0 left-0 z-50 max-w-[calc(100vw-1rem)] rounded-lg bg-c-surface shadow-popover", className)}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {children}

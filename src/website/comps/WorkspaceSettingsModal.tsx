@@ -22,7 +22,7 @@ type Props = {
 export function WorkspaceSettingsModal({ workspace, close, done }: Props) {
   const owner = workspace.role === "owner";
   return (
-    <Modal isOpen issueCloseRequestWhenClickingBackdrop issueCloseRequestWhenPressingEscape onCloseRequest={close} className="max-w-lg p-6">
+    <Modal isOpen issueCloseRequestWhenClickingBackdrop issueCloseRequestWhenPressingEscape onCloseRequest={close} className="max-w-lg p-6 sm:p-4">
       <div className="flex flex-col gap-6 text-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -205,5 +205,5 @@ function RoleSelect({ onChange, ...props }: { "aria-label": string; value: Membe
 
 namespace Row {
   export const INPUT = "h-9 min-w-0 rounded-lg border border-c-border bg-c-bg px-3 outline-none focus:border-c-accent";
-  export const ACTION = "h-9 w-24 shrink-0 px-0";
+  export const ACTION = "h-9 w-24 shrink-0 px-0 sm:w-20";
 }

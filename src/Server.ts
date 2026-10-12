@@ -79,6 +79,9 @@ export class Server {
       routes: {
         "/*": index,
         "/favicon.svg": Bun.file(path.join(import.meta.dir, "website/images/favicon.svg")),
+        // the html bundle copies the manifest verbatim, so the icons it names need paths of their own
+        "/icon-192.png": Bun.file(path.join(import.meta.dir, "website/images/icon-192.png")),
+        "/icon-512.png": Bun.file(path.join(import.meta.dir, "website/images/icon-512.png")),
         "/emojibase/en/data.json": Bun.file(Bun.resolveSync("emojibase-data/en/data.json", import.meta.dir)),
         "/emojibase/en/messages.json": Bun.file(Bun.resolveSync("emojibase-data/en/messages.json", import.meta.dir)),
         "/api/*": this.handleRoute(() => {

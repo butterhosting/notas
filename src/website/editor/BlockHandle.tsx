@@ -153,8 +153,10 @@ export namespace BlockHandle {
     const lineHeight = parseFloat(style.lineHeight) || 24;
     // centred on the block's first line
     const top = rect.top - box.top + parseFloat(style.paddingTop || "0") + (Math.min(lineHeight, rect.height) - 24) / 2;
-    const { left, compact } = anchor(view.state.doc.nodeAt(pos)?.type.name, view.state.doc.resolve(pos).parent.type.name, dom, rect);
-    return { pos, top, left: left - box.left - (compact ? 22 : 46), compact };
+    const anchored = anchor(view.state.doc.nodeAt(pos)?.type.name, view.state.doc.resolve(pos).parent.type.name, dom, rect);
+    // a phone's margin is too narrow for both, and the grip's menu is the part a touch can use
+    const compact = anchored.compact || matchMedia("(pointer: coarse)").matches;
+    return { pos, top, left: anchored.left - box.left - (compact ? 22 : 46), compact };
   }
 
   // moves the handle out past a list marker, callout icon or toggle arrow, which it would otherwise cover

@@ -64,7 +64,7 @@
             @apply rounded bg-c-code px-[0.3em] py-[0.15em] font-mono text-[85%] text-c-code-text;
         }
         pre {
-            @apply overflow-x-auto rounded bg-c-block px-8 py-6 font-mono text-sm leading-normal;
+            @apply overflow-x-auto rounded bg-c-block px-8 py-6 font-mono text-sm leading-normal md:px-4 md:py-4;
             code {
                 @apply bg-transparent p-0 text-inherit text-[100%];
             }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- the favicon's mark on a full-bleed square, inside the 80% circle a maskable icon keeps -->
+<svg width="512" height="512" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <rect width="512" height="512" fill="#ffffff"/>
+    <g fill="none" stroke-width="7" stroke-linecap="round" transform="translate(66 66) scale(5.64)">
+        <path d="M27,10 L21,54 M45,10 L39,54 M12,24 L54,24 M10,40 L52,40" stroke="#0f6b58" transform="translate(3.5 3.5)"></path>
+        <path d="M27,10 L21,54 M45,10 L39,54 M12,24 L54,24 M10,40 L52,40" stroke="#1fb393"></path>
+    </g>
+</svg>

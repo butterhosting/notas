@@ -28,6 +28,8 @@ export class ThemeClient {
     const preference = this.snapshot();
     const dark = preference === "dark" || (preference === "system" && this.query.matches);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
+    const background = getComputedStyle(document.documentElement).getPropertyValue("--color-c-bg");
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => (meta.content = background));
   }
 }
 

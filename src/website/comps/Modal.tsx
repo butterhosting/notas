@@ -54,7 +54,9 @@ export function Modal({
     <dialog
       ref={modalRef}
       className={clsx(
-        "fixed top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-2xl",
+        "fixed top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto",
+        // pinned near the top, clear of the on-screen keyboard
+        "md:top-[max(1rem,env(safe-area-inset-top))] md:translate-y-0",
         "rounded-lg focus:outline-none",
         "bg-c-surface backdrop:bg-c-backdrop backdrop:backdrop-blur-xs shadow-2xl",
         className,

@@ -199,7 +199,7 @@ function TabsView({ node, editor, getPos }: NodeViewProps) {
                     e.stopPropagation();
                     remove(index);
                   }}
-                  className="ml-1 hidden rounded px-0.5 text-c-dark-half group-hover/tab:inline hover:bg-c-hover"
+                  className="ml-1 hidden rounded px-0.5 text-c-dark-half group-hover/tab:inline hover:bg-c-hover pointer-coarse:inline"
                 >
                   ×
                 </span>

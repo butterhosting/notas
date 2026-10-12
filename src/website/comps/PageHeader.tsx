@@ -35,7 +35,7 @@ export function PageHeader({ title, icon, cover, autoFocus, readOnly, onChange, 
             onClick={() => setPicking(true)}
             className={clsx(
               "relative z-[1] -ml-1 flex size-[78px] items-center justify-center rounded-md text-[70px] leading-none hover:bg-c-hover",
-              cover ? "-mt-[42px] mb-2" : "mt-20 mb-2",
+              cover ? "-mt-[42px] mb-2" : "mt-20 mb-2 md:mt-10",
             )}
           >
             {icon}
@@ -44,8 +44,8 @@ export function PageHeader({ title, icon, cover, autoFocus, readOnly, onChange, 
         {(!icon || !cover) && !readOnly && (
           <div
             className={clsx(
-              "flex h-9 items-end gap-1 text-sm text-c-dark-half opacity-0 transition-opacity group-hover/header:opacity-100",
-              !icon && !cover && "mt-20",
+              "flex h-9 items-end gap-1 text-sm text-c-dark-half opacity-0 transition-opacity group-hover/header:opacity-100 pointer-coarse:opacity-100",
+              !icon && !cover && "mt-20 md:mt-6",
               !icon && cover && "mt-4",
             )}
           >
@@ -79,7 +79,7 @@ export function PageHeader({ title, icon, cover, autoFocus, readOnly, onChange, 
             />
           </Popover>
         )}
-        {!icon && !cover && readOnly && <div className="mt-20" />}
+        {!icon && !cover && readOnly && <div className="mt-20 md:mt-10" />}
         <Title title={title} autoFocus={autoFocus} readOnly={readOnly} onChange={(next) => onChange({ title: next })} onEnter={onEnter} />
       </div>
     </div>
@@ -110,7 +110,7 @@ function Title({ title, autoFocus, readOnly, onChange, onEnter }: TitleProps) {
           onEnter();
         }
       }}
-      className="mt-1 mb-6 block w-full resize-none overflow-hidden bg-transparent text-[40px] leading-[1.2] font-bold outline-none placeholder:text-c-placeholder-title"
+      className="mt-1 mb-6 block w-full resize-none overflow-hidden bg-transparent text-[40px] leading-[1.2] font-bold outline-none md:text-[32px] placeholder:text-c-placeholder-title"
     />
   );
 }
@@ -145,7 +145,10 @@ function PageCover({ cover, readOnly, onChange }: { cover: Page.Cover; readOnly?
       ref={ref}
       data-testid="page-cover"
       onPointerDown={startDrag}
-      className={clsx("group/cover relative h-[30vh] max-h-[280px] min-h-[160px] w-full", repositioning !== undefined && "cursor-move select-none")}
+      className={clsx(
+        "group/cover relative h-[30vh] max-h-[280px] min-h-[160px] w-full md:h-[22vh] md:min-h-[120px]",
+        repositioning !== undefined && "cursor-move touch-none select-none",
+      )}
       style={Cover.style({ ...cover, y })}
     >
       {repositioning !== undefined && (
@@ -157,7 +160,7 @@ function PageCover({ cover, readOnly, onChange }: { cover: Page.Cover; readOnly?
         hidden={readOnly}
         className={clsx(
           "absolute right-4 bottom-3 flex overflow-hidden rounded-md bg-c-surface/90 text-xs text-c-dark-half shadow-sm transition-opacity",
-          repositioning === undefined && !changing && "opacity-0 group-hover/cover:opacity-100",
+          repositioning === undefined && !changing && "opacity-0 group-hover/cover:opacity-100 pointer-coarse:opacity-100",
         )}
         onPointerDown={(e) => e.stopPropagation()}
       >

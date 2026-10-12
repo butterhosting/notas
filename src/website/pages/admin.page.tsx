@@ -45,8 +45,8 @@ export function adminPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-12">
-      <header className="mb-8 flex items-center justify-between">
+    <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-6 py-12 sm:px-4">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <img src="/favicon.svg" alt="" className="size-8" />
           <div>
@@ -64,7 +64,7 @@ export function adminPage() {
       <div className="overflow-hidden rounded-lg border border-c-border">
         {users?.length === 0 && <div className="px-4 py-10 text-center text-sm text-c-dark-half">No users yet.</div>}
         {users?.map((user) => (
-          <div key={user.id} data-testid="user-row" className="flex items-center gap-4 border-b border-c-border px-4 py-3 last:border-b-0">
+          <div key={user.id} data-testid="user-row" className="flex items-center gap-4 border-b sm:gap-2 border-c-border px-4 py-3 last:border-b-0">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-c-hover font-semibold uppercase">{user.username[0]}</div>
             <div className="flex flex-1 flex-col">
               <span className="font-medium">{user.username}</span>

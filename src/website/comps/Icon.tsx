@@ -109,6 +109,7 @@ export namespace Icon {
     true,
   );
   export const Chevron = svg(<path d="m8 5.5 4.5 4.5L8 14.5" />);
+  export const Menu = svg(<path d="M3.5 5.5h13M3.5 10h13M3.5 14.5h13" />);
   export const More = svg(
     <>
       {[5, 10, 15].map((x) => (

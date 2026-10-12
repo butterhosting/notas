@@ -309,7 +309,10 @@ namespace Document {
 function SaveIndicator({ state, onReload, onKeepMine }: { state: SaveState; onReload: () => void; onKeepMine: () => void }) {
   if (state === "conflict") {
     return (
-      <div role="alert" className="fixed top-3 right-4 z-40 flex items-center gap-3 rounded-lg bg-c-surface px-4 py-2 text-sm shadow-popover">
+      <div
+        role="alert"
+        className="fixed top-3 right-4 z-40 flex items-center gap-3 rounded-lg bg-c-surface px-4 py-2 text-sm shadow-popover md:top-[calc(3.5rem+env(safe-area-inset-top))] md:left-4 md:flex-wrap"
+      >
         This page was changed somewhere else.
         <button onClick={onReload} className="font-semibold text-c-accent">
           Load theirs
@@ -321,7 +324,7 @@ function SaveIndicator({ state, onReload, onKeepMine }: { state: SaveState; onRe
     );
   }
   return (
-    <div data-testid="save-state" data-state={state} className="fixed top-3 right-4 z-30 text-xs text-c-dark-half">
+    <div data-testid="save-state" data-state={state} className="fixed top-3 right-4 z-30 text-xs text-c-dark-half md:top-[calc(3.5rem+env(safe-area-inset-top))]">
       {state === "saving" ? "Saving…" : state === "error" ? <span className="text-c-error">Not saved, will retry on the next change</span> : ""}
     </div>
   );

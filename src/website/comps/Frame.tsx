@@ -3,7 +3,7 @@ import { User } from "@/models/User";
 import { Workspace } from "@/models/Workspace";
 import clsx from "clsx";
 import { ComponentProps, createContext, useContext, useEffect, useState, useSyncExternalStore } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { AuthClient } from "../clients/AuthClient";
 import { DialogClient } from "../clients/DialogClient";
 import { PageClient } from "../clients/PageClient";
@@ -22,19 +22,25 @@ import { RestrictedControls } from "./RestrictedControls";
 
 type Props = ComponentProps<"main">;
 export function Frame({ className, children, ...props }: Props) {
+  const [drawer, setDrawer] = useState(false);
+  const { pathname } = useLocation();
+  useEffect(() => setDrawer(false), [pathname]);
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-dvh flex-col pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
       <DemoBanner />
       <div className="flex min-h-0 flex-1">
-        <Internal.Sidebar />
-        <main {...props} className={clsx("relative flex-1 overflow-y-auto", className)}>
-          <div className="flex min-h-full flex-col">
-            <div className="flex-1">{children}</div>
-            <footer className="flex justify-center pt-24 pb-10">
-              <Lockup.Small />
-            </footer>
-          </div>
-        </main>
+        <Internal.Sidebar drawer={drawer} closeDrawer={() => setDrawer(false)} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Internal.TopBar openDrawer={() => setDrawer(true)} />
+          <main {...props} className={clsx("relative flex-1 overflow-y-auto", className)}>
+            <div className="flex min-h-full flex-col">
+              <div className="flex-1">{children}</div>
+              <footer className="flex justify-center pt-24 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+                <Lockup.Small />
+              </footer>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
@@ -62,7 +68,44 @@ namespace Internal {
   };
   const TreeContext = createContext({} as Tree);
 
-  export function Sidebar() {
+  function useSearch() {
+    const navigate = useNavigate();
+    const dialogClient = useRegistry(DialogClient);
+    return async () => {
+      const result = await dialogClient.search();
+      if (result !== "cancel") navigate(Route.page(result.id));
+    };
+  }
+
+  // phones only: the sidebar is a drawer there
+  export function TopBar({ openDrawer }: { openDrawer: () => void }) {
+    const { id } = useParams();
+    const page = usePageIndex()?.find((summary) => summary.id === id);
+    const { current } = useWorkspaces();
+    const search = useSearch();
+    return (
+      <header className="hidden h-12 shrink-0 items-center gap-1 border-b border-c-border px-1.5 md:flex">
+        <button aria-label="open sidebar" onClick={openDrawer} className="flex size-9 items-center justify-center rounded text-c-dark-half">
+          <Icon.Menu className="size-5" />
+        </button>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium">
+          {page ? (
+            <>
+              {page.icon && <span className="shrink-0">{page.icon}</span>}
+              <span className="truncate">{page.title || "Untitled"}</span>
+            </>
+          ) : (
+            <span className="truncate">{current?.name}</span>
+          )}
+        </span>
+        <button aria-label="search pages" onClick={search} className="flex size-9 items-center justify-center rounded text-c-dark-half">
+          <Icon.Search className="size-5" />
+        </button>
+      </header>
+    );
+  }
+
+  export function Sidebar({ drawer, closeDrawer }: { drawer: boolean; closeDrawer: () => void }) {
     const pages = usePageIndex() ?? [];
     const { current } = useWorkspaces();
     const canWrite = Workspace.canWrite(current?.role);
@@ -70,7 +113,7 @@ namespace Internal {
     const navigate = useNavigate();
     const pageClient = useRegistry(PageClient);
     const pageIndexClient = useRegistry(PageIndexClient);
-    const dialogClient = useRegistry(DialogClient);
+    const search = useSearch();
     const [expanded, setExpanded] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.getItem(EXPANDED) ?? "[]")));
     const [dragging, setDragging] = useState<string>();
     const [drop, setDrop] = useState<Drop>();
@@ -101,11 +144,6 @@ namespace Internal {
         setExpanded((set) => new Set([...set, ...ancestors.map(({ id }) => id)]));
       }
     }, [activeId, pages.length]);
-
-    async function search() {
-      const result = await dialogClient.search();
-      if (result !== "cancel") navigate(Route.page(result.id));
-    }
 
     useEffect(() => {
       const onKeyDown = (e: KeyboardEvent) => {
@@ -145,46 +183,57 @@ namespace Internal {
     }
 
     return (
-      <aside aria-label="sidebar" style={{ width }} className="relative flex shrink-0 flex-col bg-c-sidebar text-sm text-c-dark-full/80 md:hidden">
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="resize sidebar"
-          aria-valuemin={WIDTHS.min}
-          aria-valuemax={WIDTHS.max}
-          aria-valuenow={width}
-          onPointerDown={startResize}
-          onDoubleClick={() => setWidth(WIDTHS.default)}
-          className="group/resize absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize"
-        >
-          <div className="mx-auto h-full w-0.5 bg-c-accent/0 transition-colors group-hover/resize:bg-c-accent/40" />
-        </div>
-        <div className="flex px-2 pt-2.5 pb-1">
-          <WorkspaceSwitcher />
-        </div>
-        <div className="px-1.5">
-          <button onClick={search} className="flex w-full items-center gap-2 rounded px-2 py-1 text-c-dark-half hover:bg-c-hover">
-            <Icon.Search className="size-4" />
-            <span className="flex-1 text-left">Search</span>
-            <kbd className="font-sans text-xs text-c-dark-half/70">⌘K</kbd>
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto px-1.5 pb-4">
-          <div className="px-2 pt-4 pb-1 text-xs font-medium text-c-dark-half">Pages</div>
-          <TreeContext.Provider value={{ pages, canWrite, activeId, expanded, toggle, create, dragging, setDragging, drop, setDrop, move }}>
-            {PageIndexClient.children(pages, undefined).map((page) => (
-              <TreeItem key={page.id} page={page} depth={0} />
-            ))}
-          </TreeContext.Provider>
-          {canWrite && (
-            <button onClick={() => create()} className="flex w-full items-center gap-2 rounded px-2 py-1 text-c-dark-half hover:bg-c-hover">
-              <Icon.Plus className="size-4" /> Add new
-            </button>
+      <>
+        {drawer && <div aria-hidden onClick={closeDrawer} className="fixed inset-0 z-40 hidden bg-c-backdrop md:block" />}
+        <aside
+          aria-label="sidebar"
+          style={{ width }}
+          className={clsx(
+            "relative flex shrink-0 flex-col bg-c-sidebar text-sm text-c-dark-full/80",
+            "md:fixed md:inset-y-0 md:left-0 md:z-40 md:w-[min(85vw,320px)]! md:pt-[env(safe-area-inset-top)] md:pl-[env(safe-area-inset-left)] md:shadow-popover md:transition-[translate,visibility]",
+            !drawer && "md:invisible md:-translate-x-full",
           )}
-          <Trash />
-        </nav>
-        <Footer />
-      </aside>
+        >
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="resize sidebar"
+            aria-valuemin={WIDTHS.min}
+            aria-valuemax={WIDTHS.max}
+            aria-valuenow={width}
+            onPointerDown={startResize}
+            onDoubleClick={() => setWidth(WIDTHS.default)}
+            className="group/resize absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize md:hidden"
+          >
+            <div className="mx-auto h-full w-0.5 bg-c-accent/0 transition-colors group-hover/resize:bg-c-accent/40" />
+          </div>
+          <div className="flex px-2 pt-2.5 pb-1">
+            <WorkspaceSwitcher />
+          </div>
+          <div className="px-1.5">
+            <button onClick={search} className="flex w-full items-center gap-2 rounded px-2 py-1 text-c-dark-half hover:bg-c-hover pointer-coarse:py-2">
+              <Icon.Search className="size-4" />
+              <span className="flex-1 text-left">Search</span>
+              <kbd className="font-sans text-xs text-c-dark-half/70 pointer-coarse:hidden">⌘K</kbd>
+            </button>
+          </div>
+          <nav className="flex-1 overflow-y-auto px-1.5 pb-4">
+            <div className="px-2 pt-4 pb-1 text-xs font-medium text-c-dark-half">Pages</div>
+            <TreeContext.Provider value={{ pages, canWrite, activeId, expanded, toggle, create, dragging, setDragging, drop, setDrop, move }}>
+              {PageIndexClient.children(pages, undefined).map((page) => (
+                <TreeItem key={page.id} page={page} depth={0} />
+              ))}
+            </TreeContext.Provider>
+            {canWrite && (
+              <button onClick={() => create()} className="flex w-full items-center gap-2 rounded px-2 py-1 text-c-dark-half hover:bg-c-hover pointer-coarse:py-2">
+                <Icon.Plus className="size-4" /> Add new
+              </button>
+            )}
+            <Trash />
+          </nav>
+          <Footer />
+        </aside>
+      </>
     );
   }
 
@@ -258,7 +307,7 @@ namespace Internal {
             tree.setDrop(undefined);
           }}
           className={clsx(
-            "group/item relative flex h-[30px] items-center gap-1 rounded pr-1 hover:bg-c-hover",
+            "group/item relative flex h-[30px] items-center gap-1 rounded pr-1 hover:bg-c-hover pointer-coarse:h-10",
             page.id === tree.activeId && "bg-c-hover font-medium text-c-dark-full",
             drop === "inside" && "bg-c-accent/15",
             tree.dragging === page.id && "opacity-40",
@@ -271,7 +320,7 @@ namespace Internal {
           <button
             aria-label={open ? "collapse" : "expand"}
             onClick={() => tree.toggle(page.id)}
-            className="flex size-5 shrink-0 items-center justify-center rounded text-c-dark-half hover:bg-c-hover"
+            className="flex size-5 shrink-0 items-center justify-center rounded text-c-dark-half hover:bg-c-hover pointer-coarse:size-7"
           >
             <Icon.Chevron className={clsx("size-3.5 transition-transform", open && "rotate-90")} />
           </button>
@@ -283,12 +332,16 @@ namespace Internal {
             ref={setMenuAnchor}
             aria-label="page actions"
             onClick={() => setMenu(true)}
-            className={clsx("rounded p-0.5 text-c-dark-half hover:bg-c-hover group-hover/item:visible", menu ? "visible" : "invisible")}
+            className={clsx("rounded p-0.5 text-c-dark-half hover:bg-c-hover group-hover/item:visible pointer-coarse:visible pointer-coarse:p-1.5", menu ? "visible" : "invisible")}
           >
             <Icon.More />
           </button>
           {tree.canWrite && (
-            <button aria-label="add subpage" onClick={() => tree.create(page.id)} className="invisible rounded p-0.5 text-c-dark-half hover:bg-c-hover group-hover/item:visible">
+            <button
+              aria-label="add subpage"
+              onClick={() => tree.create(page.id)}
+              className="invisible rounded p-0.5 text-c-dark-half hover:bg-c-hover group-hover/item:visible pointer-coarse:visible pointer-coarse:p-1.5"
+            >
               <Icon.Plus />
             </button>
           )}
@@ -474,7 +527,7 @@ namespace Internal {
     const shown = pages?.filter(({ title }) => (title || "Untitled").toLowerCase().includes(filter.toLowerCase()));
     return (
       <>
-        <button ref={setAnchor} onClick={() => setOpen(true)} className="mt-3 flex w-full items-center gap-2 rounded px-2 py-1 text-c-dark-half hover:bg-c-hover">
+        <button ref={setAnchor} onClick={() => setOpen(true)} className="mt-3 flex w-full items-center gap-2 rounded px-2 py-1 text-c-dark-half hover:bg-c-hover pointer-coarse:py-2">
           <Icon.Trash className="size-4" /> Trash
         </button>
         {open && (
@@ -521,7 +574,7 @@ namespace Internal {
   function Footer() {
     const { NOTAS_STAGE } = useRegistry("env");
     return (
-      <footer className="flex flex-col gap-1.5 border-t border-c-hover px-3 py-2 text-xs text-c-dark-half">
+      <footer className="flex flex-col gap-1.5 border-t border-c-hover px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-xs text-c-dark-half">
         <ThemeSwitch />
         {NOTAS_STAGE === "dev" && <RestrictedControls />}
       </footer>

@@ -12,7 +12,7 @@ const Columns = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "columns", class: "grid grid-flow-col auto-cols-[minmax(0,1fr)] gap-x-8" }), 0];
+    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "columns", class: "grid grid-flow-col auto-cols-[minmax(0,1fr)] gap-x-8 md:grid-flow-row md:gap-y-4" }), 0];
   },
 
   markdownTokenizer: Directive.container("columns"),

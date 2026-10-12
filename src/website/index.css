@@ -84,3 +84,11 @@
         background: rgba(35, 131, 226, 0.28);
     }
 }
+
+/* iOS zooms in on any field under 16px as it takes focus, and stays zoomed; unlayered, so it beats `text-sm` */
+@media (pointer: coarse) {
+    input,
+    select {
+        font-size: 16px;
+    }
+}

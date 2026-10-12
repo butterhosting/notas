@@ -2,9 +2,18 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <title>Notas</title>
         <link rel="icon" type="image/svg+xml" href="./images/favicon.svg" />
+        <!-- with credentials: behind an SSO proxy, a manifest fetched without its cookie gets the login page instead -->
+        <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials" />
+        <link rel="apple-touch-icon" href="./images/apple-touch-icon.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Notas" />
+        <!-- --color-c-bg of either theme; ThemeClient repaints them when a preference overrides the system's -->
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
         <!-- before the first paint, so a dark page never flashes white -->
         <script>
             (function () {
